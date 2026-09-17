@@ -55,6 +55,18 @@ export function AppProvider({ children }) {
     setApps([]);
   };
 
+  const refreshApps = async () => {
+    if (user) {
+      try {
+        const res = await api.get('/api/apps');
+        setApps(res.data.applications || []);
+      } catch (err) {
+        if (err.response?.status === 401) logout();
+        else setAppsError("Gagal memuat aplikasi.");
+      }
+    }
+  };
+
   useEffect(() => {
     if (user) {
       setIsLoadingApps(true);
@@ -90,7 +102,7 @@ export function AppProvider({ children }) {
     <AppContext.Provider
       value={{
         user, favorites, recent, theme, apps, isLoadingApps, appsError,
-        login, logout, toggleFavorite, addRecent, changeTheme,
+        login, logout, toggleFavorite, addRecent, changeTheme, refreshApps
       }}
     >
       {children}

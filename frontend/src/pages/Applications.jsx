@@ -3,76 +3,37 @@ import { Search, Plus, X, CheckCircle2 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import AppCard from "../components/AppCard";
+import AppFormModal from "../components/AppFormModal";
 import api from "../api";
 
 function Applications() {
-  const { user, favorites, recent, apps, isLoadingApps, appsError } = useApp();
+  const { user, favorites, recent, apps, isLoadingApps, appsError, refreshApps } = useApp();
   const filter = new URLSearchParams(useLocation().search).get("filter");
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Semua kategori");
   const [sort, setSort] = useState("Nama A-Z");
 
-  // State Tambah Aplikasi Baru (Super User)
-  const [showAddAppModal, setShowAddAppModal] = useState(false);
-  const [appName, setAppName] = useState("");
-  const [appCategory, setAppCategory] = useState("Administrasi");
-  const [appUrl, setAppUrl] = useState("");
-  const [appDescription, setAppDescription] = useState("");
-  const [appStatus, setAppStatus] = useState("available");
-  const [appVersion, setAppVersion] = useState("1.0.0");
-  const [isSubmittingApp, setIsSubmittingApp] = useState(false);
-  const [addAppError, setAddAppError] = useState("");
+  // State Modal Tambah / Edit Aplikasi (Super User)
+  const [showAppModal, setShowAppModal] = useState(false);
+  const [appToEdit, setAppToEdit] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
 
   const isSuperUser = user?.role === "super_user";
 
-  const handleAddAppSubmit = async (e) => {
-    e.preventDefault();
-    setAddAppError("");
+  const handleOpenAddApp = () => {
+    setAppToEdit(null);
+    setShowAppModal(true);
+  };
 
-    if (!appName.trim()) return setAddAppError("Nama aplikasi wajib diisi.");
-    if (!appCategory.trim()) return setAddAppError("Kategori aplikasi wajib diisi.");
-    if (!appUrl.trim() || !/^https?:\/\//.test(appUrl.trim())) {
-      return setAddAppError("URL aplikasi wajib diawali http:// atau https://");
-    }
-
-    setIsSubmittingApp(true);
-    try {
-      const res = await api.post("/api/apps", {
-        name: appName.trim(),
-        category: appCategory.trim(),
-        url: appUrl.trim(),
-        description: appDescription.trim(),
-        status: appStatus,
-        version: appVersion.trim() || "1.0.0",
-      });
-
-      setToastMessage(res.data?.message || `Aplikasi ${appName} berhasil ditambahkan!`);
-      setShowAddAppModal(false);
-
-      // Reset form
-      setAppName("");
-      setAppCategory("Administrasi");
-      setAppUrl("");
-      setAppDescription("");
-      setAppStatus("available");
-      setAppVersion("1.0.0");
-
-      // Reload page to reflect newly created app in context
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
-    } catch (err) {
-      setAddAppError(err.response?.data?.error || "Gagal menambahkan aplikasi.");
-    } finally {
-      setIsSubmittingApp(false);
-    }
+  const handleOpenEditApp = (app) => {
+    setAppToEdit(app);
+    setShowAppModal(true);
   };
 
   const categories = [
     "Semua kategori",
-    ...new Set(apps.map((app) => app.category)),
+    ...Array.from(new Set(apps.map((app) => app.category).filter(Boolean))),
   ];
 
   const filtered = useMemo(
@@ -112,10 +73,9 @@ function Applications() {
     try {
       const res = await api.delete(`/api/apps/${appToDelete.id}`);
       setToastMessage(res.data?.message || `Aplikasi ${appToDelete.name} berhasil dihapus.`);
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
+      if (refreshApps) {
+        await refreshApps();
+      }
     } catch (err) {
       alert(err.response?.data?.error || "Gagal menghapus aplikasi.");
     }
@@ -132,7 +92,7 @@ function Applications() {
         {isSuperUser && (
           <button
             className="btn-add-app"
-            onClick={() => setShowAddAppModal(true)}
+            onClick={handleOpenAddApp}
           >
             <Plus size={16} /> Tambah Aplikasi Baru
           </button>
@@ -189,7 +149,12 @@ function Applications() {
       ) : filtered.length ? (
         <div className="app-grid">
           {filtered.map((app) => (
-            <AppCard key={app.id} app={app} onDelete={handleDeleteApp} />
+            <AppCard
+              key={app.id}
+              app={app}
+              onDelete={handleDeleteApp}
+              onEdit={isSuperUser ? handleOpenEditApp : undefined}
+            />
           ))}
         </div>
       ) : (
@@ -200,118 +165,13 @@ function Applications() {
         </div>
       )}
 
-      {/* MODAL TAMBAH APLIKASI BARU (Khusus Super User) */}
-      {showAddAppModal && (
-        <div className="modal-overlay" onClick={() => setShowAddAppModal(false)}>
-          <div
-            className="modal-card modal-form-card"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h3>Tambah Aplikasi Baru</h3>
-              <button
-                className="modal-close"
-                onClick={() => setShowAddAppModal(false)}
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleAddAppSubmit} className="modal-form-body">
-              <label>
-                Nama Aplikasi *
-                <input
-                  type="text"
-                  value={appName}
-                  onChange={(e) => setAppName(e.target.value)}
-                  placeholder="Contoh: E-Perpustakaan, Si-Akademik"
-                  required
-                />
-              </label>
-
-              <div className="form-grid-2">
-                <label>
-                  Kategori *
-                  <select
-                    value={appCategory}
-                    onChange={(e) => setAppCategory(e.target.value)}
-                    required
-                  >
-                    <option value="Administrasi">Administrasi</option>
-                    <option value="Pendidikan">Pendidikan</option>
-                    <option value="Kepegawaian">Kepegawaian</option>
-                    <option value="Layanan">Layanan</option>
-                  </select>
-                </label>
-
-                <label>
-                  Status Aplikasi
-                  <select
-                    value={appStatus}
-                    onChange={(e) => setAppStatus(e.target.value)}
-                  >
-                    <option value="available">Available (Tersedia)</option>
-                    <option value="maintenance">Maintenance (Pemeliharaan)</option>
-                    <option value="offline">Offline</option>
-                  </select>
-                </label>
-              </div>
-
-              <label>
-                URL Aplikasi / Link Web *
-                <input
-                  type="url"
-                  value={appUrl}
-                  onChange={(e) => setAppUrl(e.target.value)}
-                  placeholder="https://perpustakaan.disdikwil1.go.id"
-                  required
-                />
-              </label>
-
-              <label>
-                Deskripsi Singkat
-                <textarea
-                  value={appDescription}
-                  onChange={(e) => setAppDescription(e.target.value)}
-                  placeholder="Jelaskan secara singkat fungsi utama aplikasi..."
-                  rows={3}
-                />
-              </label>
-
-              <label>
-                Versi Aplikasi
-                <input
-                  type="text"
-                  value={appVersion}
-                  onChange={(e) => setAppVersion(e.target.value)}
-                  placeholder="1.0.0"
-                />
-              </label>
-
-              {addAppError && <div className="form-error">{addAppError}</div>}
-
-              <div
-                className="action-buttons"
-                style={{ justifyContent: "flex-end", marginTop: "15px" }}
-              >
-                <button
-                  type="button"
-                  className="btn-detail"
-                  onClick={() => setShowAddAppModal(false)}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="btn-approve"
-                  disabled={isSubmittingApp}
-                >
-                  {isSubmittingApp ? "Menyimpan..." : "Simpan Aplikasi"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* MODAL TAMBAH / EDIT APLIKASI (Super User) */}
+      <AppFormModal
+        isOpen={showAppModal}
+        onClose={() => setShowAppModal(false)}
+        appToEdit={appToEdit}
+        onSuccess={(msg) => setToastMessage(msg)}
+      />
     </div>
   );
 }

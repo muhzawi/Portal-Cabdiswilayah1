@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import AppCard from "../components/AppCard";
+import AppFormModal from "../components/AppFormModal";
 import ClockIcon from "../components/ui/ClockIcon";
 import api from "../api";
 
@@ -42,6 +43,20 @@ function Dashboard() {
 
   // State aplikasi untuk pilihan akses user
   const [allAppsList, setAllAppsList] = useState([]);
+
+  // State Modal Tambah/Edit Aplikasi
+  const [showAppModal, setShowAppModal] = useState(false);
+  const [appToEdit, setAppToEdit] = useState(null);
+
+  const handleOpenAddApp = () => {
+    setAppToEdit(null);
+    setShowAppModal(true);
+  };
+
+  const handleOpenEditApp = (app) => {
+    setAppToEdit(app);
+    setShowAppModal(true);
+  };
 
   const isSuperUser = user?.role === "super_user";
 
@@ -261,10 +276,16 @@ function Dashboard() {
                   <span className="eyebrow">Kelola Katalog</span>
                   <h2>Seluruh Aplikasi Portal ({availableApps.length})</h2>
                 </div>
+                
               </div>
               <div className="app-grid">
                 {availableApps.map((app) => (
-                  <AppCard key={app.id} app={app} onDelete={handleDeleteApp} />
+                  <AppCard
+                    key={app.id}
+                    app={app}
+                    onDelete={handleDeleteApp}
+                    onEdit={handleOpenEditApp}
+                  />
                 ))}
               </div>
             </section>
@@ -273,8 +294,8 @@ function Dashboard() {
           <section className="content-section">
             <div className="section-heading">
               <div>
-                <span className="eyebrow">Akses cepat</span>
-                <h2>Aplikasi saya</h2>
+                <span className="eyebrow">Favorit</span>
+                <h2>Aplikasi Favorit</h2>
               </div>
               <Link className="text-link" to="/apps">
                 Lihat semua <ArrowRight size={16} />
@@ -293,7 +314,12 @@ function Dashboard() {
             ) : favoriteApps.length ? (
               <div className="app-grid">
                 {favoriteApps.map((app) => (
-                  <AppCard key={app.id} app={app} onDelete={handleDeleteApp} />
+                  <AppCard
+                    key={app.id}
+                    app={app}
+                    onDelete={handleDeleteApp}
+                    onEdit={isSuperUser ? handleOpenEditApp : undefined}
+                  />
                 ))}
               </div>
             ) : (
@@ -325,7 +351,12 @@ function Dashboard() {
             ) : recentApps.length ? (
               <div className="app-grid">
                 {recentApps.map((app) => (
-                  <AppCard key={app.id} app={app} onDelete={handleDeleteApp} />
+                  <AppCard
+                    key={app.id}
+                    app={app}
+                    onDelete={handleDeleteApp}
+                    onEdit={isSuperUser ? handleOpenEditApp : undefined}
+                  />
                 ))}
               </div>
             ) : (
@@ -620,6 +651,18 @@ function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* MODAL TAMBAH / EDIT APLIKASI (Super User) */}
+      <AppFormModal
+        isOpen={showAppModal}
+        onClose={() => setShowAppModal(false)}
+        appToEdit={appToEdit}
+        onSuccess={(msg) => {
+          setToastMessage(msg);
+          fetchPublicApps();
+          fetchUsers();
+        }}
+      />
     </div>
   );
 }

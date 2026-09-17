@@ -17,7 +17,7 @@ function DashboardLayout({ children }) {
       : []),
     ["/apps", "Aplikasi", Grid2X2],
     ["/apps?filter=favorite", "Favorit", Heart],
-    ["/apps?filter=recent", "Terbaru", Star],
+    ["/apps?filter=recent", "Baru Dibuka", Star],
   ];
   return (
     <div className="dashboard-shell">

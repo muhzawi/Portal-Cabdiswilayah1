@@ -1,11 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Star, Trash2 } from "lucide-react";
+import { ArrowRight, Pencil, Star, Trash2 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import StatusBadge from "./ui/StatusBadge";
 import { getAppIcon } from "../constants";
 
-function AppCard({ app, showFavorite = true, onDelete }) {
+function AppCard({ app, showFavorite = true, onDelete, onEdit }) {
   const { user, favorites = [], toggleFavorite, addRecent } = useApp() || {};
   const Icon = app.icon || getAppIcon(app.category);
   const isFav = favorites.includes(app.id);
@@ -20,6 +20,19 @@ function AppCard({ app, showFavorite = true, onDelete }) {
           {React.createElement(Icon, { size: 22 })}
         </div>
         <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          {user?.role === "super_user" && onEdit && (
+            <button
+              className="icon-button btn-edit-app"
+              title="Edit Aplikasi"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEdit(app);
+              }}
+            >
+              <Pencil size={16} />
+            </button>
+          )}
           {user?.role === "super_user" && onDelete && (
             <button
               className="icon-button btn-delete-app"
