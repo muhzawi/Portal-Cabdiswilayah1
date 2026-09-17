@@ -1,0 +1,10 @@
+# Ignore Readme folder
+Readme/
+readme/
+
+# Environment variables
+.env
+.env.local
+
+# Node modules
+node_modules/
