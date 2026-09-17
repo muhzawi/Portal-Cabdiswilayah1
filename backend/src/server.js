@@ -13,22 +13,44 @@ import {
 // Membuat instance Express dan mengambil port dari environment.
 const app = express();
 const port = Number(process.env.PORT || 3000);
-const allowedOrigins = new Set([
-  process.env.FRONTEND_URL || "http://localhost:5173",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-]);
+
+const rawFrontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+const envOrigins = (process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const configuredOrigins = new Set(
+  [rawFrontendUrl, "http://localhost:5173", "http://127.0.0.1:5173", ...envOrigins].map(
+    (url) => url.replace(/\/+$/, ""),
+  ),
+);
 
 // Middleware keamanan, CORS, parsing JSON, dan logging request.
 app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.has(origin)) {
+      // Izinkan permintaan tanpa origin (misal: Postman, curl, mobile app, server-to-server)
+      if (!origin) return callback(null, true);
+
+      const cleanOrigin = origin.replace(/\/+$/, "");
+
+      if (
+        configuredOrigins.has("*") ||
+        configuredOrigins.has(cleanOrigin) ||
+        cleanOrigin.endsWith(".vercel.app")
+      ) {
         return callback(null, true);
       }
-      return callback(new Error("Origin tidak diizinkan oleh kebijakan CORS."));
+
+      console.warn(`[CORS Blocked] Origin tidak diizinkan: ${origin}`);
+      return callback(null, false);
     },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    optionsSuccessStatus: 200,
   }),
 );
 app.use(express.json({ limit: "100kb" }));
