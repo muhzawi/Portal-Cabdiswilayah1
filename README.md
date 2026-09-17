@@ -161,14 +161,7 @@ Portal-Disdikwilayah1/
 
 ---
 
-## 🔑 Akun Demo / Pengujian
 
-Berikut adalah akun pengujian default yang disiapkan untuk menguji hak akses role pada portal:
-
-| Role | Email | Password | Hak Akses |
-| --- | --- | --- | --- |
-| **Super User** | `superuser@disdikwil1.go.id` | `SuperUser123!` | Melihat & mengelola seluruh aplikasi (Akademik, E-Arsip, Inventaris, Kepegawaian), serta mengelola peran & akses pengguna lain. |
-| **Medium User** | `mediumuser@disdikwil1.go.id` | `MediumUser123!` | Dibatasi hanya untuk mengakses 1 aplikasi yang ditugaskan (contoh: *E-Arsip*). |
 
 ---
 
