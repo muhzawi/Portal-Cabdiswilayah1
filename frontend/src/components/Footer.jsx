@@ -12,7 +12,7 @@ function Footer() {
         <div>
           <Logo />
           <p>
-            Portal terpusat Cabang Dinas Pendidikan Wilayah I Sumatera Utara
+            Portal terpusat Cabang Dinas Pendidikan Wilayah I <br />Provinsi Sumatera Utara
           </p>
         </div>
         <div>

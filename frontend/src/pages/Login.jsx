@@ -93,7 +93,7 @@ function Login() {
 
   return (
     <div className="auth-page">
-      <div className="auth-aside">
+      <div className="auth-aside" style={{ padding: "30px" }}>
         <Logo />
         <div>
           <span className="pill">PORTAL</span>
@@ -108,7 +108,7 @@ function Login() {
           </p>
         </div>
         <span className="auth-aside-footer">
-          © 2025 Cabang Dinas Pendidikan Wilayah I Sumatera Utara
+          © 2026 Cabang Dinas Pendidikan Wilayah I Sumatera Utara
         </span>
       </div>
       <main className="auth-main">

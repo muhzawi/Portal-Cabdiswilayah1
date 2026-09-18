@@ -485,8 +485,9 @@ em {
   margin-bottom: 17px;
 }
 .footer-grid p {
-  max-width: 270px;
+  max-width: 420px;
   font-size: 0.78rem;
+  line-height: 1.5;
 }
 .footer-grid > div:not(:first-child) {
   display: flex;
@@ -527,8 +528,8 @@ em {
 }
 .auth-aside h1 {
   margin: 24px 0 14px;
-  font-size: 2.1rem;
-  line-height: 1.25;
+  font-size: 3 rem;
+  line-height: 1;
 }
 .auth-aside h1 em {
   color: #b4e0bd;
@@ -1533,7 +1534,9 @@ em {
   font-weight: 500;
   outline: none;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .app-access-select:focus {
@@ -1612,7 +1615,9 @@ em {
   font-weight: 600;
   border: 0;
   cursor: pointer;
-  transition: background 0.15s ease-in-out, transform 0.1s ease-in-out;
+  transition:
+    background 0.15s ease-in-out,
+    transform 0.1s ease-in-out;
 }
 
 .btn-add-app:hover {
@@ -1651,7 +1656,9 @@ em {
   padding: 10px 12px;
   font-size: 0.83rem;
   font-family: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .modal-form-body input:focus,
@@ -1669,7 +1676,9 @@ em {
 
 .btn-delete-app {
   color: var(--muted);
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
 .btn-delete-app:hover {
@@ -1680,7 +1689,9 @@ em {
 
 .btn-edit-app {
   color: var(--muted);
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
 .btn-edit-app:hover {

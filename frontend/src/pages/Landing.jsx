@@ -119,7 +119,7 @@ function Landing() {
               <span className="eyebrow">Aplikasi unggulan</span>
               <h2>Layanan dalam genggaman.</h2>
             </div>
-            <Link className="text-link" to="/login">
+            <Link className="text-link" to="/">
               Lihat semua aplikasi <ArrowRight size={16} />
             </Link>
           </div>

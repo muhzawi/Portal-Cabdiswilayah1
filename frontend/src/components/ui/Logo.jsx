@@ -6,9 +6,9 @@ function Logo() {
     <Link className="brand" to="/">
       <img className="brand-logo" src="/logo-disdik.webp" alt="" />
       <span>
-        Cabang Dinas Pendidikan
+        CABDISDIK WILAYAH I
         <br />
-        <strong>Wilayah I Sumatera Utara</strong>
+        <strong>PROVINSI SUMATERA UTARA</strong>
       </span>
     </Link>
   );
