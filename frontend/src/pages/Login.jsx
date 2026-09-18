@@ -108,7 +108,7 @@ function Login() {
           </p>
         </div>
         <span className="auth-aside-footer">
-          © 2025 Cabang Dinas Pendidikan Wilayah I Sumatera Utara
+          © 2026 Cabang Dinas Pendidikan Wilayah I Sumatera Utara
         </span>
       </div>
       <main className="auth-main">
