@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ShieldCheck, Star } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import PublicNav from "../components/PublicNav";
 import Footer from "../components/Footer";
 import AppCard from "../components/AppCard";
@@ -23,17 +23,13 @@ function Landing() {
       });
   }, []);
 
-  const availableApps = apps.filter((app) => app.status === "available");
-
   return (
     <div className="landing">
       <PublicNav />
       <main>
-        <section className="hero container">
-          <div className="hero-copy">
-            <span className="pill">
-              <span className="pill-dot" /> Portal Akses 
-            </span>
+        <section className="hero hero--officials container">
+          {/* 1. Teks Tengah */}
+          <div className="hero-copy hero-copy--centered">
             <h1>
               Satu Portal untuk <em>semua layanan</em> pendidikan.
             </h1>
@@ -42,50 +38,41 @@ function Landing() {
               untuk menemukan dan mengakses aplikasi kerja dengan lebih mudah.
             </p>
           </div>
-          <div className="hero-art">
-            <div className="art-card art-main">
-              <div className="art-header">
-                <span className="brand-mark small">1</span>
-                <span />
-                <span />
-                <span />
-              </div>
-              <span className="art-label">Aplikasi saya</span>
-              <strong>
-                Semua kebutuhan,
-                <br />
-                dalam satu tempat.
-              </strong>
-              <div className="art-apps">
-                {(availableApps.length ? availableApps : apps)
-                  .slice(0, 3)
-                  .map((app) => {
-                    const Icon = app.icon || getAppIcon(app.category);
-                    return (
-                      <div key={app.id}>
-                        <Icon size={17} />
-                        <span>{app.name}</span>
-                      </div>
-                    );
-                  })}
-              </div>
+
+          {/* 2. Foto Pejabat — berdampingan di tengah */}
+          <div className="hero-photos-row">
+            <div className="hero-official-photo">
+              <img
+                src="/pejabat/1.webp"
+                alt="Gubernur Sumatera Utara"
+                className="hero-official-img"
+              />
             </div>
-            <div className="art-float float-top">
-              <Star size={16} fill="currentColor" /> Akses lebih mudah
-            </div>
-            <div className="art-float float-bottom">
-              <ShieldCheck size={17} /> Aman & terpusat
+            <div className="hero-official-photo">
+              <img
+                src="/pejabat/2.webp"
+                alt="Wakil Gubernur Sumatera Utara"
+                className="hero-official-img"
+              />
             </div>
           </div>
+
+          {/* 3. Button */}
+          <div className="hero-actions hero-actions--centered">
+            <a href="/login" className="button button-primary">
+              Masuk ke Portal <ArrowRight size={16} />
+            </a>
+          </div>
         </section>
-        <section className="trust-strip"></section>
+
+
+
+
         <section className="steps section container" id="cara-kerja">
           <div className="section-heading centered">
             <span className="eyebrow">Cara kerja</span>
             <h2>Mulai bekerja dalam tiga langkah.</h2>
-            <p>
-              Semua yang Anda butuhkan dalam satu pintu.
-            </p>
+            <p>Semua yang Anda butuhkan dalam satu pintu.</p>
           </div>
           <div className="step-grid">
             {[
@@ -94,11 +81,7 @@ function Landing() {
                 "Masuk",
                 "Gunakan akun Anda untuk masuk ke portal dengan aman.",
               ],
-              [
-                "02",
-                "Temukan aplikasi",
-                "Cari aplikasi yang Anda perlukan.",
-              ],
+              ["02", "Temukan aplikasi", "Cari aplikasi yang Anda perlukan."],
               [
                 "03",
                 "Mulai bekerja",

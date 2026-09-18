@@ -93,7 +93,7 @@ function Login() {
 
   return (
     <div className="auth-page">
-      <div className="auth-aside" style={{ padding: "30px" }}>
+      <div className="auth-aside">
         <Logo />
         <div>
           <span className="pill">PORTAL</span>

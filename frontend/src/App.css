@@ -60,11 +60,21 @@ p {
 .app {
   min-height: 100vh;
 }
+.public-nav-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
 .public-nav {
   height: 86px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
 }
 .brand {
   display: flex;
@@ -74,6 +84,10 @@ p {
   font-size: 0.72rem;
   line-height: 1.2;
   letter-spacing: -0.03em;
+  text-align: left;
+}
+.brand span {
+  text-align: left;
 }
 .brand strong {
   font-size: 0.79rem;
@@ -105,17 +119,68 @@ p {
   font-size: 0.9rem;
   border-radius: 7px 7px 7px 2px;
 }
+.public-nav-links,
 .public-nav nav {
   display: flex;
   gap: 34px;
   margin-left: auto;
-  margin-right: 42px;
+  margin-right: 32px;
   color: var(--muted);
   font-size: 0.9rem;
+  font-weight: 500;
 }
+.public-nav-links a:hover,
 .public-nav nav a:hover,
 .text-link:hover {
   color: var(--green-700);
+}
+.public-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.public-nav-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: 0.2s;
+}
+.public-nav-hamburger:hover {
+  background: var(--green-50);
+  color: var(--green-700);
+  border-color: var(--green-200);
+}
+.public-nav-backdrop {
+  display: none;
+}
+.public-nav-mobile-menu {
+  display: none;
+}
+@keyframes slideDownNav {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .button {
   border: 0;
@@ -160,8 +225,54 @@ p {
   gap: 70px;
   padding-top: 35px;
 }
+/* Steps section — reduced top padding to sit close to hero */
+.steps {
+  padding-top: 40px;
+}
+/* Hero with officials: vertical layout — teks → foto → button */
+.hero--officials {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0px;
+  min-height: auto;
+  padding-top: 40px;
+  padding-bottom: 2px;
+  text-align: center;
+}
+/* Baris foto pejabat berdampingan */
+.hero-photos-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 32px;
+  width: 100%;
+}
 .hero-copy {
   max-width: 580px;
+}
+.hero-copy--centered {
+  max-width: 100%;
+  text-align: center;
+  padding-bottom: 0;
+}
+.hero-copy--centered h1 {
+  margin: 12px 0 12px;
+  font-size: clamp(1.6rem, 3vw, 2.8rem);
+  line-height: 1.15;
+}
+.hero-copy--centered p {
+  max-width: 480px;
+  margin: 0 auto;
+  font-size: 1rem;
+}
+.hero-copy--centered .hero-actions {
+  justify-content: center;
+  margin-top: 0;
+}
+/* Centered hero button */
+.hero-actions--centered {
+  justify-content: center;
 }
 .hero-copy h1 {
   margin: 25px 0 20px;
@@ -169,6 +280,10 @@ p {
 em {
   color: var(--green-600);
   font-style: normal;
+}
+/* Old mobile-only class — kept for compatibility */
+.hero-cta-mobile {
+  display: none;
 }
 .hero-copy p {
   max-width: 490px;
@@ -206,6 +321,20 @@ em {
   color: var(--green-700);
   font-weight: 600;
   font-size: 0.85rem;
+}
+.hero-official-photo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+/* Foto pejabat */
+.hero-official-img {
+  display: block;
+  width: 360px;
+  height: 440px;
+  object-fit: contain;
+  object-position: center center;
+  filter: drop-shadow(0 16px 40px rgba(26, 63, 42, 0.2));
 }
 .hero-art {
   min-height: 390px;
@@ -344,6 +473,7 @@ em {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
+  text-align: center;
 }
 .step-grid {
   display: grid;
@@ -470,6 +600,115 @@ em {
   color: var(--muted);
   opacity: 0.65;
 }
+
+/* ===== OFFICIALS / PEJABAT SECTION ===== */
+.officials-section {
+  padding: 80px 0 60px;
+  background: linear-gradient(160deg, var(--green-50) 0%, var(--bg) 60%);
+  border-bottom: 1px solid var(--line);
+}
+.officials-row {
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  align-items: center;
+  gap: 40px;
+  margin-bottom: 52px;
+}
+.officials-row:last-child {
+  margin-bottom: 0;
+}
+.officials-row--second {
+  padding-top: 40px;
+  border-top: 1px solid var(--line);
+}
+.official-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.official-photo-wrap {
+  width: 200px;
+  height: 260px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(26, 63, 42, 0.14);
+  border: 3px solid var(--line);
+  background: var(--green-100);
+}
+.official-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.official-name-below {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-align: center;
+}
+.official-name-below strong {
+  font-size: 0.88rem;
+  color: var(--ink);
+  font-family: Manrope, sans-serif;
+}
+.official-name-below span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.officials-center-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  padding: 0 16px;
+}
+.officials-center-text--sm {
+  gap: 12px;
+}
+.officials-ornament {
+  font-size: 5rem;
+  line-height: 0.6;
+  font-family: Georgia, serif;
+  color: var(--green-600);
+  opacity: 0.35;
+  user-select: none;
+}
+.officials-quote {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--ink);
+  font-style: italic;
+  font-family: Georgia, serif;
+  max-width: 560px;
+}
+.officials-cite {
+  font-size: 0.75rem;
+  color: var(--green-700);
+  font-weight: 600;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.officials-badge {
+  display: inline-block;
+  background: var(--green-700);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: Manrope, sans-serif;
+  text-align: center;
+  line-height: 1.5;
+  padding: 10px 20px;
+  border-radius: 50px;
+  letter-spacing: -0.02em;
+}
+/* ===== END OFFICIALS SECTION ===== */
+
 .footer {
   margin-top: 100px;
   padding: 52px 0 24px;
@@ -1320,39 +1559,219 @@ em {
   .container {
     width: min(100% - 32px, 560px);
   }
+
+  /* ===== 1. PUBLIC NAV MOBILE (Hamburger + Masuk button visible) ===== */
   .public-nav {
-    height: 72px;
+    height: 68px;
   }
+  .public-nav-links,
   .public-nav nav {
     display: none;
   }
-  .nav-cta {
-    padding: 9px 12px;
-    font-size: 0.72rem;
+  .public-nav-hamburger {
+    display: flex;
   }
+  .public-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 98;
+    animation: fadeIn 0.2s ease-out;
+  }
+  .public-nav-mobile-menu {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+    z-index: 99;
+    animation: slideDownNav 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .mobile-menu-inner {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0 16px;
+    gap: 6px;
+  }
+  .mobile-nav-link {
+    display: block;
+    padding: 12px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--ink);
+    border-radius: 8px;
+    text-align: center;
+    transition: 0.15s;
+  }
+  .mobile-nav-link:hover,
+  .mobile-nav-link:active {
+    background: var(--green-50);
+    color: var(--green-700);
+  }
+  .nav-cta {
+    padding: 8px 14px;
+    font-size: 0.78rem;
+  }
+
+  /* ===== 2. HERO SECTION ===== */
   .hero {
     display: block;
     min-height: auto;
-    padding: 70px 0 55px;
+    padding: 24px 0;
   }
-  .hero-copy {
-    text-align: center;
-    margin: auto;
+  .hero--officials {
+    margin-top: 24px;
+    gap: 14px;
+    padding: 12px 0 20px;
+  }
+  .hero-photos-row {
+    margin-top: 6px;
+    gap: 12px;
+  }
+  .hero-official-img {
+    width: clamp(160px, 45vw, 205px);
+    height: auto;
+    max-height: 270px;
+  }
+  .hero-copy--centered h1 {
+    font-size: clamp(1.2rem, 5vw, 1.6rem);
+    margin: 6px 0 8px;
+  }
+  .hero-copy--centered p {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    max-width: 100%;
   }
   .hero-copy p {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
   }
   .hero-actions {
+    margin-top: 50px;
     justify-content: center;
     flex-wrap: wrap;
   }
   .hero-art {
-    margin-top: 50px;
-    min-height: 330px;
+    margin-top: 40px;
+    min-height: 300px;
     transform: scale(0.9);
   }
+
+  /* ===== 3. SECTION LAINNYA ===== */
+  /* Steps section */
+  .steps {
+    padding-top: 30px;
+    text-align: center;
+  }
+  .steps .section-heading.centered {
+    text-align: center;
+    margin: 0 auto 36px;
+  }
+  .step-grid {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0 0 24px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .step:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .step-number {
+    text-align: center;
+  }
+  .step h3 {
+    text-align: center;
+  }
+  .step p {
+    text-align: center;
+    margin: 0 auto;
+    max-width: 280px;
+  }
+
+  /* Featured / Aplikasi Section */
+  .featured {
+    padding-top: 30px;
+  }
+  .featured .section-heading,
+  .section-heading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+  .section-heading > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+  }
+  .section-heading .eyebrow {
+    display: block;
+    text-align: center;
+    width: 100%;
+  }
+  .section-heading .text-link {
+    justify-content: center;
+    white-space: nowrap;
+  }
+  .featured-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .featured-grid .app-card,
+  .app-card {
+    text-align: left;
+    align-items: flex-start;
+  }
+  .app-card-top {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .app-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    width: 100%;
+    padding-top: 16px;
+  }
+  .app-card h3 {
+    text-align: left;
+  }
+  .app-card p {
+    text-align: left;
+    margin: 0;
+    max-width: 100%;
+  }
+  .status {
+    justify-content: flex-start;
+  }
+  .card-action {
+    justify-content: flex-start;
+    width: auto;
+  }
+
+  /* Trust strip (jika ada) */
   .trust-strip .container {
     flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
     gap: 10px;
     padding: 17px 0;
   }
@@ -1360,53 +1779,128 @@ em {
   .strip-line {
     display: none;
   }
-  .step-grid {
-    grid-template-columns: 1fr;
-    gap: 30px;
-  }
-  .step {
-    padding: 0 0 28px;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
   .section {
-    padding: 70px 0;
+    padding: 60px 0;
   }
-  .section-heading {
-    align-items: start;
-  }
-  .section-heading .text-link {
-    white-space: nowrap;
-  }
-  .featured-grid {
+
+  /* Officials Row (jika ada) */
+  .officials-row {
     grid-template-columns: 1fr;
+    gap: 28px;
+    text-align: center;
+    justify-items: center;
   }
+  .officials-row .official-card:nth-child(3) {
+    order: 3;
+  }
+  .officials-center-text {
+    order: 2;
+    padding: 20px 0;
+    text-align: center;
+    align-items: center;
+  }
+  .official-photo-wrap {
+    width: 160px;
+    height: 210px;
+  }
+
+  /* Footer Section: Align Left */
   .footer {
     margin-top: 50px;
+    padding: 40px 0 24px;
   }
   .footer-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 28px 20px;
   }
   .footer-grid > div:first-child {
     grid-column: 1/-1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+  .footer-grid > div:first-child .brand {
+    justify-content: flex-start;
+    margin-bottom: 12px;
+  }
+  .footer-grid > div:first-child p {
+    text-align: left;
+    margin: 0;
+    max-width: 100%;
+  }
+  .footer-grid > div:not(:first-child) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 10px;
+  }
+  .footer-title {
+    text-align: left;
+    margin-bottom: 6px;
+  }
+  .footer-grid > div:not(:first-child) a,
+  .footer-grid > div:not(:first-child) span {
+    justify-content: flex-start;
+    text-align: left;
   }
   .footer-bottom {
     display: grid;
     gap: 8px;
+    padding-top: 24px;
+    margin-top: 30px;
   }
+  .footer-bottom span {
+    text-align: left;
+  }
+
+  /* Auth page mobile */
   .auth-page {
     display: block;
   }
   .auth-aside {
-    min-height: 280px;
-    padding: 25px 24px;
+    position: relative;
+    min-height: auto;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+  .auth-aside .brand {
+    align-self: flex-start;
+    justify-content: flex-start;
+    text-align: left;
+    margin-bottom: 4px;
+  }
+  .auth-aside .brand span {
+    text-align: left;
+  }
+  .auth-aside > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+  }
+  .auth-aside .pill {
+    position: absolute;
+    top: 26px;
+    right: 24px;
+    margin: 0;
   }
   .auth-aside h1 {
-    font-size: 2.5rem;
-    margin: 20px 0 10px;
+    font-size: clamp(1.6rem, 5.5vw, 2.2rem);
+    margin: 14px 0 10px;
+    text-align: center;
   }
   .auth-aside p {
-    font-size: 0.8rem;
+    font-size: 0.84rem;
+    max-width: 340px;
+    margin: 0 auto;
+    text-align: center;
   }
   .auth-aside-footer {
     display: none;
