@@ -806,6 +806,7 @@ em {
 .auth-form > .eyebrow {
   display: block;
   margin-top: 30px;
+  text-align: left;
 }
 .auth-form h2 {
   margin: 8px 0 6px;
