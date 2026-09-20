@@ -79,14 +79,25 @@ p {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   color: var(--green-900);
   font-size: 0.72rem;
   line-height: 1.2;
   letter-spacing: -0.03em;
   text-align: left;
 }
-.brand span {
+.brand-primary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-secondary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand span,
+.brand-text {
   text-align: left;
 }
 .brand strong {
@@ -98,9 +109,26 @@ p {
 }
 .brand-logo {
   display: block;
-  width: 35px;
-  height: 35px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
+  transition: transform 0.2s ease;
+}
+.brand-logo-large {
+  display: block;
+  height: 46px;
+  width: auto;
+  max-width: 70px;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+.brand-logo-large.logo-berkah {
+  height: 56px;
+  max-width: 95px;
+}
+.brand:hover .brand-logo,
+.brand:hover .brand-logo-large {
+  transform: scale(1.05);
 }
 .brand-mark {
   display: grid;
@@ -765,6 +793,9 @@ em {
 .auth-aside .brand {
   color: #fff;
 }
+.auth-aside .brand-secondary {
+  display: none;
+}
 .auth-aside h1 {
   margin: 24px 0 14px;
   font-size: 3 rem;
@@ -1171,8 +1202,11 @@ em {
   font-size: 1rem;
 }
 .sidebar .brand-logo {
-  width: 29px;
-  height: 29px;
+  width: 28px;
+  height: 28px;
+}
+.sidebar .brand-secondary {
+  display: none;
 }
 .side-nav,
 .side-bottom {
@@ -1564,6 +1598,31 @@ em {
   /* ===== 1. PUBLIC NAV MOBILE (Hamburger + Masuk button visible) ===== */
   .public-nav {
     height: 68px;
+  }
+  .brand {
+    gap: 10px;
+    font-size: 0.64rem;
+  }
+  .brand-primary {
+    gap: 7px;
+  }
+  .brand-secondary {
+    gap: 8px;
+  }
+  .brand-logo {
+    width: 28px;
+    height: 28px;
+  }
+  .brand-logo-large {
+    height: 34px;
+    max-width: 48px;
+  }
+  .brand-logo-large.logo-berkah {
+    height: 42px;
+    max-width: 70px;
+  }
+  .brand strong {
+    font-size: 0.7rem;
   }
   .public-nav-links,
   .public-nav nav {

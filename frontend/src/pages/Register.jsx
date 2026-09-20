@@ -70,7 +70,7 @@ function Register() {
   return (
     <div className="auth-page">
       <div className="auth-aside">
-        <Logo />
+        <Logo showSecondary={false} />
         <div>
           <span className="pill">PORTAL</span>
           <h1>
