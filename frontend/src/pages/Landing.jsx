@@ -44,14 +44,14 @@ function Landing() {
             <div className="hero-official-photo">
               <img
                 src="/pejabat/1.webp"
-                alt="Gubernur Sumatera Utara"
+                alt="Kepala Dinas Pendidikan Provinsi Sumatera Utara"
                 className="hero-official-img"
               />
             </div>
             <div className="hero-official-photo">
               <img
                 src="/pejabat/2.webp"
-                alt="Wakil Gubernur Sumatera Utara"
+                alt="Kepala Cabang Dinas Pendidikan Wilayah I"
                 className="hero-official-img"
               />
             </div>
