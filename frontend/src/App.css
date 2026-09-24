@@ -2326,3 +2326,330 @@ em {
   border-radius: 8px;
   border: 1px dashed var(--green-600);
 }
+
+/* ========================================================
+   1. SHOW / HIDE PASSWORD
+   ======================================================== */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 42px !important;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.password-toggle-btn:hover {
+  color: var(--ink);
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="dark"] .password-toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ========================================================
+   2. CATEGORY GROUPING
+   ======================================================== */
+.category-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  margin-top: 12px;
+}
+
+.category-group-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.category-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid var(--line);
+}
+
+.category-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.category-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--green-800);
+  background: var(--green-100);
+  padding: 4px 14px;
+  border-radius: 999px;
+  letter-spacing: 0.01em;
+}
+
+:root[data-theme="dark"] .category-pill-badge {
+  color: var(--green-200);
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.category-count {
+  font-size: 0.84rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ========================================================
+   3. MONITORING PENGGUNA - EDIT & SAVE CHANGES
+   ======================================================== */
+.btn-edit-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-edit-user:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+:root[data-theme="dark"] .btn-edit-user {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: rgba(37, 99, 235, 0.3);
+  color: #93c5fd;
+}
+
+:root[data-theme="dark"] .btn-edit-user:hover {
+  background: rgba(37, 99, 235, 0.25);
+  color: #bfdbfe;
+}
+
+.btn-save-changes {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--green-700);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.btn-save-changes:hover:not(:disabled) {
+  background: var(--green-800);
+  transform: translateY(-1px);
+}
+
+.btn-save-changes:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-cancel:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.edit-user-modal-card {
+  max-width: 660px !important;
+  width: 95% !important;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.edit-user-modal-body {
+  overflow-y: auto;
+  max-height: calc(90vh - 140px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group-block label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.role-radio-group {
+  display: flex;
+  gap: 12px;
+}
+
+.role-radio-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: var(--surface);
+  transition: all 0.15s;
+}
+
+.role-radio-option.selected {
+  border-color: var(--green-600);
+  background: rgba(34, 197, 94, 0.07);
+  font-weight: 600;
+  color: var(--green-800);
+}
+
+:root[data-theme="dark"] .role-radio-option.selected {
+  color: var(--green-300);
+}
+
+.app-selection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.app-selection-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-text-action {
+  background: none;
+  border: none;
+  color: var(--green-700);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.btn-text-action:hover {
+  text-decoration: underline;
+}
+
+.apps-checklist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.app-check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: all 0.15s;
+}
+
+.app-check-item.checked {
+  border-color: var(--green-600);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.app-check-item input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--green-600);
+  width: 16px;
+  height: 16px;
+}
+
+.app-pill-summary-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-width: 320px;
+}
+
+.app-pill-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.app-pill-more {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 2px 4px;
+}
+

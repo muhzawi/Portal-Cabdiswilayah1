@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import PublicNav from "../components/PublicNav";
@@ -22,6 +22,16 @@ function Landing() {
         console.error("Gagal mengambil data aplikasi dari database:", err);
       });
   }, []);
+
+  const groupedApps = useMemo(() => {
+    const groups = {};
+    apps.forEach((app) => {
+      const cat = app.category || "Lainnya";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(app);
+    });
+    return groups;
+  }, [apps]);
 
   return (
     <div className="landing">
@@ -106,9 +116,21 @@ function Landing() {
               Lihat semua aplikasi <ArrowRight size={16} />
             </Link>
           </div>
-          <div className="featured-grid">
-            {apps.map((app) => (
-              <AppCard key={app.id} app={app} showFavorite={false} />
+          <div className="category-groups">
+            {Object.entries(groupedApps).map(([catName, catApps]) => (
+              <div key={catName} className="category-group-section">
+                <div className="category-group-header">
+                  <div className="category-title-wrap">
+                    <span className="category-pill-badge">{catName}</span>
+                    <span className="category-count">({catApps.length} aplikasi)</span>
+                  </div>
+                </div>
+                <div className="featured-grid">
+                  {catApps.map((app) => (
+                    <AppCard key={app.id} app={app} showFavorite={false} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </section>
