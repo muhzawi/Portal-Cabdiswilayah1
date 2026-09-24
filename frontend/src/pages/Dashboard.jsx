@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Grid2X2,
   Star,
-  Users,
   Search,
   CheckCircle,
   Trash2,
@@ -12,14 +11,18 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
-  Plus,
-  PlusCircle,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import AppCard from "../components/AppCard";
 import AppFormModal from "../components/AppFormModal";
 import ClockIcon from "../components/ui/ClockIcon";
 import api from "../api";
+
+function getRoleCapability(role) {
+  if (["super_user", "superadmin"].includes(role)) return "Akses semua aplikasi";
+  if (role === "admin") return "Upload aplikasi dan kelola pengguna";
+  return "Kirim dokumen dari aplikasi yang diberikan";
+}
 
 function Dashboard() {
   const { user, favorites, recent, apps, isLoadingApps, appsError } = useApp();
@@ -48,27 +51,23 @@ function Dashboard() {
   const [showAppModal, setShowAppModal] = useState(false);
   const [appToEdit, setAppToEdit] = useState(null);
 
-  const handleOpenAddApp = () => {
-    setAppToEdit(null);
-    setShowAppModal(true);
-  };
-
   const handleOpenEditApp = (app) => {
     setAppToEdit(app);
     setShowAppModal(true);
   };
 
-  const isSuperUser = user?.role === "super_user";
+  const isAdmin = ["admin", "superadmin", "super_user"].includes(user?.role);
+  const isSuperUser = ["superadmin", "super_user"].includes(user?.role);
 
   // Fetch users jika Super User berada di tab Monitoring
   const fetchUsers = async () => {
-    if (!isSuperUser) return;
+    if (!isAdmin) return;
     setIsLoadingUsers(true);
     setUsersError("");
     try {
       const res = await api.get("/api/users");
       setUsersList(res.data?.users || []);
-    } catch (err) {
+    } catch {
       setUsersError("Gagal memuat daftar pengguna.");
     } finally {
       setIsLoadingUsers(false);
@@ -76,14 +75,14 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    if (isSuperUser) {
+    if (isAdmin) {
       fetchUsers();
       api
         .get("/api/public-apps")
         .then((res) => setAllAppsList(res.data?.applications || []))
         .catch(() => {});
     }
-  }, [isSuperUser]);
+  }, [isAdmin]);
 
   const availableApps = allAppsList.length > 0 ? allAppsList : apps;
 
@@ -119,8 +118,41 @@ function Dashboard() {
     }
   };
 
+  const handleReject = async (id) => {
+    setActionLoadingId(id);
+    try {
+      const res = await api.patch(`/api/users/${id}/reject`);
+      setToastMessage(res.data?.message || "Akun berhasil ditolak.");
+      fetchUsers();
+      if (selectedUser?.id === id) {
+        setSelectedUser((prev) => (prev ? { ...prev, status: "rejected" } : null));
+      }
+    } catch (err) {
+      alert(err.response?.data?.error || "Gagal menolak pengguna.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleRoleChange = async (targetUser, role) => {
+    if (targetUser.id === user.id) return;
+    setActionLoadingId(targetUser.id);
+    try {
+      await api.patch(`/api/users/${targetUser.id}/role`, { role });
+      setToastMessage(`Role ${targetUser.full_name} berhasil diubah menjadi ${role}.`);
+      fetchUsers();
+      if (selectedUser?.id === targetUser.id) {
+        setSelectedUser((prev) => (prev ? { ...prev, role } : null));
+      }
+    } catch (err) {
+      alert(err.response?.data?.error || "Gagal mengubah role pengguna.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   const handleAppAccessChange = async (targetUser, newAccessArray) => {
-    if (targetUser.role === "super_user") {
+    if (["super_user", "superadmin"].includes(targetUser.role)) {
       alert("Super User secara otomatis memiliki akses penuh ke seluruh aplikasi.");
       return;
     }
@@ -130,26 +162,20 @@ function Dashboard() {
       await api.put(`/api/users/${targetUser.id}/app-access`, {
         applicationIds: newAccessArray,
       });
-
       const appNames = newAccessArray
         .map((id) => availableApps.find((a) => a.id === id)?.name || id)
         .join(", ");
-
       setToastMessage(
         `Akses aplikasi untuk ${targetUser.full_name} berhasil diperbarui: ${appNames || "Tanpa Akses"}`
       );
-
       fetchUsers();
-
       if (selectedUser?.id === targetUser.id) {
         setSelectedUser((prev) =>
           prev ? { ...prev, app_access: newAccessArray } : null
         );
       }
     } catch (err) {
-      alert(
-        err.response?.data?.error || "Gagal memperbarui akses aplikasi pengguna."
-      );
+      alert(err.response?.data?.error || "Gagal memperbarui akses aplikasi pengguna.");
     } finally {
       setActionLoadingId(null);
     }
@@ -160,11 +186,7 @@ function Dashboard() {
       alert("Anda tidak dapat menghapus akun Anda sendiri.");
       return;
     }
-    if (
-      !window.confirm(
-        `Apakah Anda yakin ingin menghapus akun ${userName || "pengguna ini"} secara permanen?`,
-      )
-    ) {
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus akun ${userName || "pengguna ini"} secara permanen?`)) {
       return;
     }
     setActionLoadingId(id);
@@ -172,9 +194,7 @@ function Dashboard() {
       const res = await api.delete(`/api/users/${id}`);
       setToastMessage(res.data?.message || "Akun pengguna berhasil dihapus secara permanen.");
       fetchUsers();
-      if (selectedUser?.id === id) {
-        setSelectedUser(null);
-      }
+      if (selectedUser?.id === id) setSelectedUser(null);
     } catch (err) {
       alert(err.response?.data?.error || "Gagal menghapus pengguna.");
     } finally {
@@ -238,7 +258,6 @@ function Dashboard() {
         </span>
       </div>
 
-      {/* TOAST NOTIFICATION */}
       {toastMessage && (
         <div className="form-success" style={{ marginBottom: "20px" }}>
           <CheckCircle2 size={16} /> {toastMessage}
@@ -276,7 +295,6 @@ function Dashboard() {
                   <span className="eyebrow">Kelola Katalog</span>
                   <h2>Seluruh Aplikasi Portal ({availableApps.length})</h2>
                 </div>
-                
               </div>
               <div className="app-grid">
                 {availableApps.map((app) => (
@@ -369,8 +387,8 @@ function Dashboard() {
         </>
       )}
 
-      {/* TAB 2: MONITORING PENGGUNA (Khusus Super User) */}
-      {activeTab === "monitoring" && isSuperUser && (
+      {/* TAB 2: MONITORING PENGGUNA (Admin dan Super Admin) */}
+      {activeTab === "monitoring" && isAdmin && (
         <div className="monitoring-container">
           <div className="monitoring-filter-bar">
             <label className="search-input monitoring-search">
@@ -418,6 +436,7 @@ function Dashboard() {
                     <th>Pengguna</th>
                     <th>Role</th>
                     <th>Status Akun</th>
+                    <th>Kemampuan</th>
                     <th>Akses Aplikasi</th>
                     <th>Tanggal Registrasi</th>
                     <th>Aksi</th>
@@ -425,7 +444,6 @@ function Dashboard() {
                 </thead>
                 <tbody>
                   {filteredUsers.map((u) => {
-                    const currentAppId = u.app_access?.[0] || "";
                     return (
                       <tr key={u.id}>
                         <td>
@@ -435,9 +453,22 @@ function Dashboard() {
                           </div>
                         </td>
                         <td>
-                          <span className="eyebrow" style={{ fontSize: "0.72rem" }}>
-                            {u.role === "super_user" ? "Super User" : "Medium User"}
-                          </span>
+                          {isSuperUser ? (
+                            <select
+                              className="role-select"
+                              value={u.role === "super_user" ? "superadmin" : u.role}
+                              disabled={u.id === user.id || actionLoadingId === u.id}
+                              onChange={(e) => handleRoleChange(u, e.target.value)}
+                              aria-label={`Ubah role ${u.full_name}`}
+                            >
+                              <option value="staff">Staff</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                          ) : (
+                            <span className="eyebrow" style={{ fontSize: "0.72rem" }}>
+                              {u.role === "super_user" || u.role === "superadmin" ? "Super Admin" : u.role === "admin" ? "Admin" : "Staff"}
+                            </span>
+                          )}
                         </td>
                         <td>
                           <span className={`status-badge-pill ${u.status || "approved"}`}>
@@ -449,7 +480,12 @@ function Dashboard() {
                           </span>
                         </td>
                         <td>
-                          {u.role === "super_user" ? (
+                          <span className={`capability-badge ${u.status === "approved" ? "active" : "waiting"}`}>
+                            {u.status === "approved" ? getRoleCapability(u.role) : "Aktif setelah Approved"}
+                          </span>
+                        </td>
+                        <td>
+                          {["super_user", "superadmin"].includes(u.role) ? (
                             <span className="pill-all-access">Semua Aplikasi</span>
                           ) : (
                             <div className="multi-app-select-container">
@@ -513,7 +549,17 @@ function Dashboard() {
                               </button>
                             )}
 
-                            {u.id !== user.id && (
+                            {u.status === "pending" && u.id !== user.id && (
+                              <button
+                                className="btn-reject"
+                                disabled={actionLoadingId === u.id}
+                                onClick={() => handleReject(u.id)}
+                                title="Tolak pendaftaran"
+                              >
+                                <X size={14} /> Tolak
+                              </button>
+                            )}
+                            {u.id !== user.id && u.status !== "pending" && (
                               <button
                                 className="btn-reject"
                                 disabled={actionLoadingId === u.id}
@@ -553,27 +599,22 @@ function Dashboard() {
                 <X size={18} />
               </button>
             </div>
+            <div className="user-detail-summary">
+              <div className="user-detail-avatar">
+                {(selectedUser.full_name || selectedUser.email || "U")[0].toUpperCase()}
+              </div>
+              <div>
+                <strong>{selectedUser.full_name || "Nama belum tersedia"}</strong>
+                <span>{selectedUser.email || "Email belum tersedia"}</span>
+              </div>
+            </div>
             <div className="modal-body">
-              <div className="detail-row">
-                <label>Nama Lengkap</label>
-                <span>{selectedUser.full_name}</span>
-              </div>
-              <div className="detail-row">
-                <label>Email</label>
-                <span>{selectedUser.email}</span>
-              </div>
-              <div className="detail-row">
-                <label>ID Pengguna</label>
-                <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}>
-                  {selectedUser.id}
-                </span>
-              </div>
               <div className="detail-row">
                 <label>Role</label>
                 <span>
-                  {selectedUser.role === "super_user"
-                    ? "Super User"
-                    : "Medium User"}
+                  {selectedUser.role === "super_user" || selectedUser.role === "superadmin"
+                    ? "Super Admin"
+                    : selectedUser.role === "admin" ? "Admin" : "Staff"}
                 </span>
               </div>
               <div className="detail-row">
@@ -582,9 +623,17 @@ function Dashboard() {
                   {selectedUser.status}
                 </span>
               </div>
+              <div className="detail-row">
+                <label>Hak Akses Role</label>
+                <span>
+                  {selectedUser.status === "approved"
+                    ? getRoleCapability(selectedUser.role)
+                    : "Belum aktif, menunggu approval akun"}
+                </span>
+              </div>
               <div className="detail-row" style={{ alignItems: "start" }}>
                 <label>Akses Aplikasi</label>
-                {selectedUser.role === "super_user" ? (
+                {["super_user", "superadmin"].includes(selectedUser.role) ? (
                   <span className="pill-all-access">Semua Aplikasi (Akses Penuh)</span>
                 ) : (
                   <div className="multi-app-select-container">
@@ -601,14 +650,9 @@ function Dashboard() {
                             disabled={actionLoadingId === selectedUser.id}
                             onChange={(e) => {
                               const currentAccess = selectedUser.app_access || [];
-                              let newAccess;
-                              if (e.target.checked) {
-                                newAccess = [...currentAccess, app.id];
-                              } else {
-                                newAccess = currentAccess.filter(
-                                  (id) => id !== app.id,
-                                );
-                              }
+                              const newAccess = e.target.checked
+                                ? [...currentAccess, app.id]
+                                : currentAccess.filter((id) => id !== app.id);
                               handleAppAccessChange(selectedUser, newAccess);
                             }}
                           />
@@ -620,22 +664,31 @@ function Dashboard() {
                 )}
               </div>
               <div className="detail-row">
-                <label>Tanggal Dibuat</label>
+                <label>Tanggal Pendaftaran</label>
                 <span>
                   {selectedUser.created_at
                     ? new Date(selectedUser.created_at).toLocaleString("id-ID")
-                    : "-"}
+                    : "Belum tersedia"}
                 </span>
               </div>
             </div>
             <div className="action-buttons" style={{ justifyContent: "flex-end", marginTop: "10px" }}>
-              {selectedUser.status !== "approved" && (
+              {selectedUser.status === "pending" && (
                 <button
                   className="btn-approve"
                   disabled={actionLoadingId === selectedUser.id}
                   onClick={() => handleApprove(selectedUser.id)}
                 >
                   <CheckCircle size={14} /> Approve Akun
+                </button>
+              )}
+              {selectedUser.status === "pending" && selectedUser.id !== user.id && (
+                <button
+                  className="btn-reject"
+                  disabled={actionLoadingId === selectedUser.id}
+                  onClick={() => handleReject(selectedUser.id)}
+                >
+                  <X size={14} /> Tolak Akun
                 </button>
               )}
               {selectedUser.id !== user.id && (

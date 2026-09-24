@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import Logo from "../components/ui/Logo";
 import Button from "../components/ui/Button";
@@ -15,6 +15,9 @@ function Register() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +29,6 @@ function Register() {
     setError("");
     setSuccess("");
 
-    // Validasi input di frontend
     if (!name.trim()) return setError("Nama lengkap wajib diisi.");
     if (!email.trim()) return setError("Email wajib diisi.");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -117,26 +119,73 @@ function Register() {
                 required
               />
             </label>
+
             <label>
               Password (min. 8 karakter)
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder=""
-                required
-              />
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder=""
+                  style={{ width: "100%", paddingRight: "40px" }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--muted, #666)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "4px"
+                  }}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </label>
+
             <label>
               Konfirmasi password
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder=""
-                required
-              />
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder=""
+                  style={{ width: "100%", paddingRight: "40px" }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--muted, #666)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "4px"
+                  }}
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </label>
+
             {error && <div className="form-error">{error}</div>}
             {success && (
               <div className="form-success">

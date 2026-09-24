@@ -22,9 +22,11 @@ Endpoint utama:
 - `POST /auth/signup`, `POST /auth/login`, `POST /auth/forgot-password`,
   `POST /auth/reset-password`, `POST /auth/logout`, `GET /auth/me`
 - `GET /api/users`, `PATCH /api/users/:id/role`, dan
-  `PUT /api/users/:id/app-access` (super_user)
+  `PUT /api/users/:id/app-access` (admin/superadmin; perubahan role hanya superadmin)
+- `PATCH /api/users/:id/approve` dan `PATCH /api/users/:id/reject` (admin/superadmin)
+- `GET /api/activity-logs` (superadmin)
 - `GET /api/apps`, `GET /api/apps/:id`, `GET /api/apps/:id/redirect`
-- `POST /api/apps` dan `PATCH /api/apps/:id` (super_user)
+- `POST /api/apps` (admin/superadmin), `PATCH /api/apps/:id` dan `DELETE /api/apps/:id` (superadmin)
 
 Untuk memberi akses aplikasi kepada medium user, tambahkan baris pada tabel
 `user_application_access` di Supabase:
@@ -43,5 +45,8 @@ Content-Type: application/json
 
 {"applicationIds":["e-arsip","akademik"]}
 ```
+
+Jalankan `mysql/008_activity_logs.sql` sekali pada database MySQL untuk mengaktifkan audit log.
+Perubahan password memakai `POST /auth/reset-password` dengan `currentPassword` dan `newPassword`.
 
 Kirim access token Supabase pada header `Authorization: Bearer <token>`.

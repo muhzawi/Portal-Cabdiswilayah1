@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import PublicNav from "../components/PublicNav";
@@ -9,6 +9,28 @@ import api from "../api";
 
 function Landing() {
   const [apps, setApps] = useState(publicApps);
+  const stepsRef = useRef(null);
+  const [stepsPaused, setStepsPaused] = useState(false);
+
+  useEffect(() => {
+    if (stepsPaused) return undefined;
+
+    const timer = window.setInterval(() => {
+      const container = stepsRef.current;
+      if (!container || container.scrollWidth <= container.clientWidth) return;
+
+      const firstStep = container.querySelector(".step");
+      const stepWidth = firstStep ? firstStep.getBoundingClientRect().width + 14 : container.clientWidth;
+      const isAtEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 4;
+
+      container.scrollTo({
+        left: isAtEnd ? 0 : container.scrollLeft + stepWidth,
+        behavior: "smooth",
+      });
+    }, 3000);
+
+    return () => window.clearInterval(timer);
+  }, [stepsPaused]);
 
   useEffect(() => {
     api
@@ -74,7 +96,14 @@ function Landing() {
             <h2>Mulai bekerja dalam tiga langkah.</h2>
             <p>Semua yang Anda butuhkan dalam satu pintu.</p>
           </div>
-          <div className="step-grid">
+          <div
+            className="step-grid"
+            ref={stepsRef}
+            onMouseEnter={() => setStepsPaused(true)}
+            onMouseLeave={() => setStepsPaused(false)}
+            onTouchStart={() => setStepsPaused(true)}
+            onTouchEnd={() => setStepsPaused(false)}
+          >
             {[
               [
                 "01",

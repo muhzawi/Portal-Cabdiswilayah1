@@ -20,7 +20,7 @@ function AppCard({ app, showFavorite = true, onDelete, onEdit }) {
           {React.createElement(Icon, { size: 22 })}
         </div>
         <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-          {user?.role === "super_user" && onEdit && (
+          {["superadmin", "super_user"].includes(user?.role) && onEdit && (
             <button
               className="icon-button btn-edit-app"
               title="Edit Aplikasi"
@@ -33,7 +33,7 @@ function AppCard({ app, showFavorite = true, onDelete, onEdit }) {
               <Pencil size={16} />
             </button>
           )}
-          {user?.role === "super_user" && onDelete && (
+          {["superadmin", "super_user"].includes(user?.role) && onDelete && (
             <button
               className="icon-button btn-delete-app"
               title="Hapus Aplikasi"

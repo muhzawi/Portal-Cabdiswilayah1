@@ -14,12 +14,13 @@ function Applications() {
   const [category, setCategory] = useState("Semua kategori");
   const [sort, setSort] = useState("Nama A-Z");
 
-  // State Modal Tambah / Edit Aplikasi (Super User)
+  // Admin dapat menambahkan aplikasi; edit/hapus tetap khusus Super Admin.
   const [showAppModal, setShowAppModal] = useState(false);
   const [appToEdit, setAppToEdit] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
 
-  const isSuperUser = user?.role === "super_user";
+  const isSuperUser = ["superadmin", "super_user"].includes(user?.role);
+  const canUploadApp = isSuperUser || user?.role === "admin";
 
   const handleOpenAddApp = () => {
     setAppToEdit(null);
@@ -89,12 +90,12 @@ function Applications() {
           <h1>Semua aplikasi</h1>
           <p>Temukan layanan yang membantu pekerjaan Anda.</p>
         </div>
-        {isSuperUser && (
+        {canUploadApp && (
           <button
             className="btn-add-app"
             onClick={handleOpenAddApp}
           >
-            <Plus size={16} /> Tambah Aplikasi Baru
+            <Plus size={16} /> Upload Aplikasi
           </button>
         )}
       </div>
@@ -165,7 +166,7 @@ function Applications() {
         </div>
       )}
 
-      {/* MODAL TAMBAH / EDIT APLIKASI (Super User) */}
+      {/* MODAL TAMBAH / EDIT APLIKASI */}
       <AppFormModal
         isOpen={showAppModal}
         onClose={() => setShowAppModal(false)}

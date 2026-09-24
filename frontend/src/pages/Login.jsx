@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ArrowRight, X, CheckCircle2 } from "lucide-react";
+import { ArrowRight, X, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import Logo from "../components/ui/Logo";
 import Button from "../components/ui/Button";
@@ -19,6 +19,7 @@ function Login() {
     return savedEmail || "";
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -78,13 +79,17 @@ function Login() {
     setForgotSuccess("");
 
     try {
-      const response = await api.post("/auth/forgot-password", { email: forgotEmail });
+      const response = await api.post("/auth/forgot-password", {
+        email: forgotEmail,
+      });
       setForgotSuccess(
-        response.data?.message || "Jika email terdaftar, instruksi reset password telah dikirim."
+        response.data?.message ||
+          "Jika email terdaftar, instruksi reset password telah dikirim.",
       );
     } catch (err) {
       setForgotError(
-        err.response?.data?.error || "Gagal mengirim instruksi reset password. Silakan coba lagi."
+        err.response?.data?.error ||
+          "Gagal mengirim instruksi reset password. Silakan coba lagi.",
       );
     } finally {
       setForgotLoading(false);
@@ -133,12 +138,40 @@ function Login() {
             </label>
             <label>
               Password
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder=""
-              />
+              <div
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder=""
+                  style={{ width: "100%", paddingRight: "40px" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--muted, #666)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "4px",
+                  }}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </label>
             <div className="form-row">
               <label className="check">
@@ -166,7 +199,10 @@ function Login() {
           </form>
           <p className="auth-note">
             Belum memiliki akun?{" "}
-            <Link to="/register" style={{ color: "var(--green-700)", fontWeight: 600 }}>
+            <Link
+              to="/register"
+              style={{ color: "var(--green-700)", fontWeight: 600 }}
+            >
               Daftar sekarang
             </Link>
           </p>
@@ -178,16 +214,39 @@ function Login() {
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Lupa Password</h3>
-              <button type="button" className="modal-close" onClick={closeForgotModal}>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={closeForgotModal}
+              >
                 <X size={20} />
               </button>
             </div>
             <div className="modal-body">
-              <p style={{ fontSize: "0.9rem", color: "var(--muted)", margin: 0 }}>
-                Masukkan alamat email yang terdaftar pada portal. Kami akan mengirimkan tautan instruksi untuk mengatur ulang password Anda.
+              <p
+                style={{ fontSize: "0.9rem", color: "var(--muted)", margin: 0 }}
+              >
+                Masukkan alamat email yang terdaftar pada portal. Kami akan
+                mengirimkan tautan instruksi untuk mengatur ulang password Anda.
               </p>
-              <form onSubmit={handleForgotSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "8px" }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600, fontSize: "0.85rem" }}>
+              <form
+                onSubmit={handleForgotSubmit}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                  marginTop: "8px",
+                }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                  }}
+                >
                   Email
                   <input
                     type="email"
@@ -199,7 +258,7 @@ function Login() {
                       borderRadius: "8px",
                       border: "1px solid var(--line)",
                       fontSize: "0.9rem",
-                      outline: "none"
+                      outline: "none",
                     }}
                     required
                   />
@@ -207,14 +266,32 @@ function Login() {
 
                 {forgotError && <div className="form-error">{forgotError}</div>}
                 {forgotSuccess && (
-                  <div className="form-success" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div
+                    className="form-success"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
                     <CheckCircle2 size={16} />
                     <span>{forgotSuccess}</span>
                   </div>
                 )}
 
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
-                  <Button type="button" variant="secondary" onClick={closeForgotModal}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "10px",
+                    marginTop: "8px",
+                  }}
+                >
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={closeForgotModal}
+                  >
                     Batal
                   </Button>
                   <Button type="submit" disabled={forgotLoading}>

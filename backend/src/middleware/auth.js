@@ -1,63 +1,53 @@
-import { supabaseAdmin, supabaseForToken } from "../supabase.js";
+import jwt from "jsonwebtoken";
+import db from "../db.js";
 
-function bearerToken(req) {
-  // Token dikirim client melalui header: Authorization: Bearer <token>.
-  const header = req.get("authorization") || "";
-  return header.startsWith("Bearer ") ? header.slice(7) : null;
-}
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
-export async function requireAuth(req, res, next) {
-  const token = bearerToken(req);
-  if (!token) {
-    return res.status(401).json({ error: "Token autentikasi diperlukan." });
+export const requireAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Sesi tidak valid atau token tidak ditemukan." });
   }
 
-  // Supabase memvalidasi token dan memastikan user masih terdaftar.
-  const { data, error } = await supabaseForToken(token).auth.getUser();
-  if (error || !data.user) {
-    return res.status(401).json({ error: "Token autentikasi tidak valid." });
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // Berisi data user dari token ({ id, email, role, status })
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Token kadaluarsa atau tidak valid." });
   }
+};
 
-  // Ambil role dari database agar role tidak dapat dipalsukan dari client.
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from("profiles")
-    .select("id, full_name, role")
-    .eq("id", data.user.id)
-    .single();
+export const requireRole = (...roles) => {
+  const allowedRoles = new Set(roles.flatMap((role) => {
+    if (role === "super_user") return ["super_user", "superadmin"];
+    if (role === "medium_user") return ["medium_user", "staff"];
+    return [role];
+  }));
 
-  if (profileError) return next(profileError);
-  req.user = { ...data.user, profile };
-  req.accessToken = token;
-  next();
-}
-
-export function requireRole(...roles) {
   return (req, res, next) => {
-    // Middleware ini harus dipasang setelah requireAuth.
-    if (!req.user || !roles.includes(req.user.profile.role)) {
-      return res.status(403).json({ error: "Anda tidak memiliki akses." });
+    if (!req.user || !allowedRoles.has(req.user.role)) {
+      return res.status(403).json({ error: "Akses ditolak. Anda tidak memiliki izin." });
     }
     next();
   };
-}
+};
 
-export async function requireApplicationAccess(req, res, next) {
-  // Super user otomatis memiliki akses ke seluruh aplikasi.
-  if (req.user?.profile.role === "super_user") return next();
+export const requireApplicationAccess = async (req, res, next) => {
+  if (["super_user", "superadmin"].includes(req.user?.role)) return next();
 
-  // Medium user harus memiliki baris akses untuk aplikasi yang diminta.
-  const { data, error } = await supabaseAdmin
-    .from("user_application_access")
-    .select("application_id")
-    .eq("user_id", req.user.id)
-    .eq("application_id", req.params.id)
-    .maybeSingle();
-
-  if (error) return next(error);
-  if (!data) {
-    return res
-      .status(403)
-      .json({ error: "Anda tidak memiliki akses ke aplikasi ini." });
+  // Cek akses via database MySQL
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM user_application_access WHERE user_id = ? AND application_id = ?",
+      [req.user.id, req.params.id]
+    );
+    if (rows.length === 0) {
+      return res.status(403).json({ error: "Anda tidak memiliki akses ke aplikasi ini." });
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
-}
+};

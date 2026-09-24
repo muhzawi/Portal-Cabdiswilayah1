@@ -11,6 +11,7 @@ import Applications from "./pages/Applications";
 import ApplicationDetail from "./pages/ApplicationDetail";
 import Profile from "./pages/Profile";
 import SettingsPage from "./pages/SettingsPage";
+import ActivityLogs from "./pages/ActivityLogs";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 function ProtectedApp() {
@@ -24,6 +25,7 @@ function ProtectedApp() {
           <Route path="/apps/:id" element={<ApplicationDetail />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/activity-logs" element={<ActivityLogs />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </DashboardLayout>

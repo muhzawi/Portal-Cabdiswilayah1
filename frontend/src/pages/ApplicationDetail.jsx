@@ -9,7 +9,7 @@ import api from "../api";
 
 function ApplicationDetail() {
   const { id } = useParams();
-  const { apps, favorites, toggleFavorite, addRecent } = useApp();
+  const { user, apps, favorites, toggleFavorite, addRecent } = useApp();
   const app = apps.find((item) => item.id === id);
   if (!app)
     return (
@@ -61,7 +61,9 @@ function ApplicationDetail() {
               }
             }}
           >
-            Buka aplikasi <ExternalLink size={17} />
+            {user?.role === "staff" || user?.role === "medium_user"
+              ? "Kirim dokumen"
+              : "Buka aplikasi"} <ExternalLink size={17} />
           </Button>
           <button
             className={`button button-secondary ${favorites.includes(app.id) ? "selected" : ""}`}

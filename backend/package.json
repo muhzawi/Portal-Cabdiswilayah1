@@ -1,19 +1,22 @@
 {
-  "name": "portal-disdikwilayah-backend",
+  "name": "backend",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js"
+    "start": "node -r dotenv/config src/server.js",
+    "dev": "nodemon -r dotenv/config src/server.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.57.0",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.0",
-    "pg": "^8.23.0"
+    "mysql2": "^3.24.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
