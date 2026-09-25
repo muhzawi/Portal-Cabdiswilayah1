@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { randomUUID } from "node:crypto";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -21,9 +22,12 @@ const envOrigins = (process.env.ALLOWED_ORIGINS || "")
   .filter(Boolean);
 
 const configuredOrigins = new Set(
-  [rawFrontendUrl, "http://localhost:5173", "http://127.0.0.1:5173", ...envOrigins].map(
-    (url) => url.replace(/\/+$/, ""),
-  ),
+  [
+    rawFrontendUrl,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    ...envOrigins,
+  ].map((url) => url.replace(/\/+$/, "")),
 );
 
 // Middleware keamanan, CORS, parsing JSON, dan logging request.
@@ -53,12 +57,15 @@ app.use(
     optionsSuccessStatus: 200,
   }),
 );
-app.use(express.json({ limit: "100kb" }));
+app.use(express.json({ limit: "4mb" }));
 app.use(morgan("tiny"));
 
 // Endpoint sederhana untuk memeriksa apakah API sedang berjalan.
 app.get("/", (_req, res) =>
-  res.json({ message: "Portal Disdikwilayah API is running", health: "/health" })
+  res.json({
+    message: "Portal Disdikwilayah API is running",
+    health: "/health",
+  }),
 );
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
@@ -67,7 +74,7 @@ app.get("/api/public-apps", async (_req, res, next) => {
   try {
     const { data, error } = await supabaseAdmin
       .from("applications")
-      .select("id, name, category, description, status, version, url")
+      .select("id, name, category, description, status, version, url, icon_url")
       .order("name");
     if (error) return next(error);
     res.json({ applications: data });
@@ -75,6 +82,64 @@ app.get("/api/public-apps", async (_req, res, next) => {
     next(error);
   }
 });
+
+app.post(
+  "/api/app-icons",
+  requireAuth,
+  requireRole("super_user"),
+  async (req, res, next) => {
+    try {
+      const { mimeType, data } = req.body;
+      const allowedMimeTypes = [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/svg+xml",
+      ];
+
+      if (!allowedMimeTypes.includes(mimeType)) {
+        return res.status(400).json({
+          error: "Format ikon harus PNG, JPG, WEBP, atau SVG.",
+        });
+      }
+      if (
+        typeof data !== "string" ||
+        !data.startsWith(`data:${mimeType};base64,`)
+      ) {
+        return res.status(400).json({ error: "File ikon tidak valid." });
+      }
+
+      const base64Data = data.slice(data.indexOf(",") + 1);
+      const fileBuffer = Buffer.from(base64Data, "base64");
+      if (!fileBuffer.length || fileBuffer.length > 2 * 1024 * 1024) {
+        return res
+          .status(400)
+          .json({ error: "Ukuran file ikon maksimal 2 MB." });
+      }
+
+      const extension =
+        mimeType === "image/svg+xml"
+          ? "svg"
+          : mimeType.split("/")[1].replace("jpeg", "jpg");
+      const filePath = `${randomUUID()}.${extension}`;
+      const { error } = await supabaseAdmin.storage
+        .from("application-icons")
+        .upload(filePath, fileBuffer, {
+          contentType: mimeType,
+          cacheControl: "3600",
+          upsert: false,
+        });
+      if (error) return next(error);
+
+      const supabaseUrl = process.env.SUPABASE_URL.replace(/\/+$/, "");
+      res.status(201).json({
+        iconUrl: `${supabaseUrl}/storage/v1/object/public/application-icons/${filePath}`,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // Membuat akun baru melalui Supabase Auth.
 app.post("/auth/signup", async (req, res, next) => {
@@ -261,6 +326,7 @@ app.post("/auth/forgot-password", async (req, res, next) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo,
     });
+
     if (error) {
       const msg = error.message || "";
       if (
@@ -281,6 +347,136 @@ app.post("/auth/forgot-password", async (req, res, next) => {
     // Ini mencegah endpoint mengungkap keberadaan akun.
     res.json({
       message: "Jika email terdaftar, instruksi reset password telah dikirim.",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+function profileSchemaMigrationResponse(res, err) {
+  if (err) {
+    console.error("Profile schema error detail:", err);
+  }
+  return res.status(503).json({
+    error:
+      "Database belum siap untuk fitur edit profil. Jalankan migrasi backend/supabase/010_add_profile_details.sql di Supabase, lalu restart backend.",
+  });
+}
+
+app.get("/api/profile", requireAuth, async (req, res, next) => {
+  let profileQuery = await supabaseAdmin
+    .from("profiles")
+    .select("id, full_name, institution, nip, role, status")
+    .eq("id", req.user.id)
+    .single();
+
+  if (
+    profileQuery.error &&
+    (profileQuery.error.code === "42703" ||
+      profileQuery.error.code === "PGRST204")
+  ) {
+    console.warn(
+      "Supabase PostgREST cache belum memuat kolom institution/nip. Mencoba fallback ke kolom dasar...",
+      profileQuery.error.message,
+    );
+    profileQuery = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, role, status")
+      .eq("id", req.user.id)
+      .single();
+  }
+
+  if (profileQuery.error) {
+    console.error("Error fetching profile:", profileQuery.error);
+    return next(profileQuery.error);
+  }
+
+  res.json({
+    profile: {
+      institution: "",
+      nip: "",
+      ...profileQuery.data,
+      email: req.user.email,
+    },
+  });
+});
+
+app.patch("/api/profile", requireAuth, async (req, res, next) => {
+  try {
+    const fullName =
+      typeof req.body.fullName === "string" ? req.body.fullName.trim() : "";
+    const email =
+      typeof req.body.email === "string" ? req.body.email.trim() : "";
+    const institution =
+      typeof req.body.institution === "string"
+        ? req.body.institution.trim()
+        : "";
+    const nip = typeof req.body.nip === "string" ? req.body.nip.trim() : "";
+
+    if (!fullName) {
+      return res.status(400).json({ error: "Nama lengkap wajib diisi." });
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "Format email tidak valid." });
+    }
+
+    if (email !== req.user.email) {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(
+        req.user.id,
+        {
+          email,
+          user_metadata: { ...req.user.user_metadata, full_name: fullName },
+        },
+      );
+      if (error) return res.status(400).json({ error: error.message });
+    }
+
+    let updateRes = await supabaseAdmin
+      .from("profiles")
+      .update({
+        full_name: fullName,
+        institution,
+        nip,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", req.user.id)
+      .select("id, full_name, institution, nip, role, status")
+      .single();
+
+    if (
+      updateRes.error &&
+      (updateRes.error.code === "42703" || updateRes.error.code === "PGRST204")
+    ) {
+      console.warn(
+        "Kolom institution/nip belum siap di Supabase cache saat update. Mengupdate full_name saja...",
+        updateRes.error.message,
+      );
+      updateRes = await supabaseAdmin
+        .from("profiles")
+        .update({
+          full_name: fullName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", req.user.id)
+        .select("id, full_name, role, status")
+        .single();
+    }
+
+    if (updateRes.error) {
+      console.error("Error updating profile:", updateRes.error);
+      return next(updateRes.error);
+    }
+
+    res.json({
+      message: "Profil berhasil diperbarui.",
+      profile: {
+        institution: "",
+        nip: "",
+        ...updateRes.data,
+        institution,
+        nip,
+        email,
+      },
     });
   } catch (error) {
     next(error);
@@ -665,7 +861,7 @@ app.get("/api/apps", requireAuth, async (_req, res, next) => {
   // Super user melihat semua aplikasi; medium user melihat semua aplikasi yang diizinkan oleh Super Admin.
   let query = supabaseAdmin
     .from("applications")
-    .select("id, name, category, description, status, version, url")
+    .select("id, name, category, description, status, version, url, icon_url")
     .order("name");
   if (_req.user.profile.role === "medium_user") {
     const { data: access, error: accessError } = await supabaseAdmin
@@ -688,7 +884,7 @@ app.get(
   async (req, res, next) => {
     const { data, error } = await supabaseAdmin
       .from("applications")
-      .select("id, name, category, description, status, version, url")
+      .select("id, name, category, description, status, version, url, icon_url")
       .eq("id", req.params.id)
       .single();
     if (error)
@@ -724,8 +920,16 @@ app.post(
   requireRole("super_user"),
   async (req, res, next) => {
     try {
-      const { name, category, description, status, version, url, id } =
-        req.body;
+      const {
+        name,
+        category,
+        description,
+        status,
+        version,
+        url,
+        icon_url,
+        id,
+      } = req.body;
 
       if (!name || typeof name !== "string" || !name.trim()) {
         return res.status(400).json({ error: "Nama aplikasi wajib diisi." });
@@ -741,6 +945,14 @@ app.post(
         return res
           .status(400)
           .json({ error: "URL aplikasi wajib diawali http:// atau https://" });
+      }
+      if (
+        icon_url &&
+        (typeof icon_url !== "string" || !/^https?:\/\//.test(icon_url.trim()))
+      ) {
+        return res
+          .status(400)
+          .json({ error: "URL ikon wajib diawali http:// atau https://" });
       }
 
       const generatedId =
@@ -761,6 +973,7 @@ app.post(
           : "available",
         version: version ? version.trim() : "1.0.0",
         url: url.trim(),
+        icon_url: icon_url?.trim() || null,
       };
 
       const { data, error } = await supabaseAdmin
@@ -771,11 +984,9 @@ app.post(
 
       if (error) {
         if (error.code === "23505") {
-          return res
-            .status(400)
-            .json({
-              error: "Aplikasi dengan ID / nama tersebut sudah terdaftar.",
-            });
+          return res.status(400).json({
+            error: "Aplikasi dengan ID / nama tersebut sudah terdaftar.",
+          });
         }
         return next(error);
       }
@@ -803,10 +1014,23 @@ app.patch(
       "status",
       "version",
       "url",
+      "icon_url",
     ];
     const changes = Object.fromEntries(
       Object.entries(req.body).filter(([key]) => allowed.includes(key)),
     );
+    if (
+      changes.icon_url &&
+      (typeof changes.icon_url !== "string" ||
+        !/^https?:\/\//.test(changes.icon_url.trim()))
+    ) {
+      return res
+        .status(400)
+        .json({ error: "URL ikon wajib diawali http:// atau https://" });
+    }
+    if (typeof changes.icon_url === "string") {
+      changes.icon_url = changes.icon_url.trim() || null;
+    }
     const { data, error } = await supabaseAdmin
       .from("applications")
       .update(changes)
@@ -843,7 +1067,9 @@ app.delete(
       if (error) {
         return res
           .status(400)
-          .json({ error: "Gagal menghapus aplikasi atau aplikasi tidak ditemukan." });
+          .json({
+            error: "Gagal menghapus aplikasi atau aplikasi tidak ditemukan.",
+          });
       }
 
       res.json({
@@ -857,14 +1083,20 @@ app.delete(
 );
 
 app.use((error, _req, res, _next) => {
-  // Satu error handler terpusat agar detail error internal tidak dikirim ke client.
-  console.error(error);
-  res.status(500).json({ error: "Terjadi kesalahan pada server." });
+  console.error("Internal Server Error:", error);
+  const status = typeof error.status === "number" && error.status >= 400 && error.status < 600
+    ? error.status
+    : 500;
+  res.status(status).json({
+    error: error.message || "Terjadi kesalahan pada server.",
+    code: error.code,
+    details: error.details || error.hint || undefined,
+  });
 });
 
 if (!process.env.VERCEL) {
   app.listen(port, () =>
-    console.log(`API listening on http://localhost:${port}`)
+    console.log(`API listening on http://localhost:${port}`),
   );
 }
 

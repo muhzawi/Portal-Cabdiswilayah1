@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
+  ArrowLeft,
   ArrowRight,
   Grid2X2,
-  Star,
   Users,
   Search,
   CheckCircle,
@@ -20,11 +20,11 @@ import {
 import { useApp } from "../context/AppContext";
 import AppCard from "../components/AppCard";
 import AppFormModal from "../components/AppFormModal";
-import ClockIcon from "../components/ui/ClockIcon";
 import api from "../api";
+import { getAppIcon } from "../constants";
 
 function Dashboard() {
-  const { user, favorites, recent, apps, isLoadingApps, appsError } = useApp();
+  const { user, apps } = useApp();
   const location = useLocation();
 
   // Tab aktif disinkronkan dengan query parameter ?tab=monitoring pada sidebar kiri
@@ -88,6 +88,7 @@ function Dashboard() {
   }, [isSuperUser]);
 
   const availableApps = allAppsList.length > 0 ? allAppsList : apps;
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   const groupedAvailableApps = useMemo(() => {
     const groups = {};
@@ -98,6 +99,28 @@ function Dashboard() {
     });
     return groups;
   }, [availableApps]);
+
+  const categorySummaries = useMemo(
+    () =>
+      Object.entries(groupedAvailableApps).map(([name, categoryApps]) => ({
+        name,
+        apps: categoryApps,
+        Icon: getAppIcon(name),
+      })),
+    [groupedAvailableApps],
+  );
+
+  useEffect(() => {
+    if (
+      selectedCategory &&
+      !categorySummaries.some((category) => category.name === selectedCategory)
+    ) {
+      setSelectedCategory("");
+    }
+  }, [categorySummaries, selectedCategory]);
+
+  const selectedCategoryApps =
+    categorySummaries.find((category) => category.name === selectedCategory)?.apps || [];
 
   // State Edit Pengguna dengan fitur Save Changes
   const [editingUser, setEditingUser] = useState(null);
@@ -306,18 +329,13 @@ function Dashboard() {
     }
   };
 
-  const favoriteApps = apps.filter((app) => favorites.includes(app.id));
-  const recentApps = recent
-    .map((id) => apps.find((app) => app.id === id))
-    .filter(Boolean);
-
   return (
     <div className="page-content">
       <div className="page-heading">
         <div>
           <span className="eyebrow">Dashboard</span>
           <h1>
-            Selamat datang, {user.name} <span className="wave">✦</span>
+            Selamat Datang, {user.name} <span className="wave">✦</span>
           </h1>
           <p>
             {isSuperUser
@@ -366,114 +384,82 @@ function Dashboard() {
             </div>
           </section>
 
-          {isSuperUser && availableApps.length > 0 && (
-            <section className="content-section">
-              <div className="section-heading">
-                <div>
-                  <span className="eyebrow">Kelola Katalog</span>
-                  <h2>Seluruh Aplikasi Portal ({availableApps.length})</h2>
-                </div>
-              </div>
-              <div className="category-groups">
-                {Object.entries(groupedAvailableApps).map(([catName, catApps]) => (
-                  <div key={catName} className="category-group-section">
-                    <div className="category-group-header">
-                      <div className="category-title-wrap">
-                        <span className="category-pill-badge">{catName}</span>
-                        <span className="category-count">({catApps.length} aplikasi)</span>
-                      </div>
+          {availableApps.length > 0 && (
+            <section className="content-section category-browser">
+              {!selectedCategory ? (
+                <>
+                  <div className="section-heading">
+                    <div>
+                      <span className="eyebrow">Kategori</span>
+                      <h2>Pilih area kerja Anda</h2>
                     </div>
-                    <div className="app-grid">
-                      {catApps.map((app) => (
-                        <AppCard
-                          key={app.id}
-                          app={app}
-                          onDelete={handleDeleteApp}
-                          onEdit={handleOpenEditApp}
-                        />
-                      ))}
-                    </div>
+                    <p className="section-heading-description">
+                      Pilih kategori untuk melihat layanan aplikasi yang tersedia.
+                    </p>
                   </div>
-                ))}
-              </div>
+                  <div className="category-selector-grid">
+                    {categorySummaries.map(({ name, apps: categoryApps, Icon }) => (
+                      <button
+                        type="button"
+                        key={name}
+                        className="category-card category-card--interactive"
+                        onClick={() => setSelectedCategory(name)}
+                      >
+                        <span className="category-card-icon">
+                          <Icon size={24} />
+                        </span>
+                        <span className="category-card-copy">
+                          <strong>{name}</strong>
+                          <span>{categoryApps.length} aplikasi tersedia</span>
+                          <small>
+                            Layanan untuk kebutuhan {name.toLowerCase()} Anda.
+                          </small>
+                          <span className="category-card-link">
+                            Selengkapnya <ArrowRight size={15} />
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <section className="applications-panel" aria-live="polite">
+                  <div className="applications-panel-heading">
+                    <div>
+                      <span className="eyebrow">Aplikasi dalam kategori</span>
+                      <h2>{selectedCategory}</h2>
+                      <p className="category-page-summary">
+                        {selectedCategoryApps.length} aplikasi tersedia untuk kebutuhan{" "}
+                        {selectedCategory.toLowerCase()}.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="panel-close-button"
+                      onClick={() => setSelectedCategory("")}
+                    >
+                      <ArrowLeft size={15} />
+                      Kembali ke kategori
+                    </button>
+                  </div>
+                  <p className="applications-panel-description">
+                    Pilih aplikasi untuk langsung membuka layanan terkait.
+                  </p>
+                  <div className="app-grid app-grid--subcards">
+                    {selectedCategoryApps.map((app) => (
+                      <AppCard
+                        key={app.id}
+                        app={app}
+                        directLink
+                        onDelete={isSuperUser ? handleDeleteApp : undefined}
+                        onEdit={isSuperUser ? handleOpenEditApp : undefined}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
             </section>
           )}
-
-          <section className="content-section">
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">Favorit</span>
-                <h2>Aplikasi Favorit</h2>
-              </div>
-              <Link className="text-link" to="/apps">
-                Lihat semua <ArrowRight size={16} />
-              </Link>
-            </div>
-
-            {isLoadingApps ? (
-              <div className="inline-empty">
-                <span className="empty-clock">◷</span>
-                <span>Memuat aplikasi...</span>
-              </div>
-            ) : appsError ? (
-              <div className="inline-empty">
-                <span>{appsError}</span>
-              </div>
-            ) : favoriteApps.length ? (
-              <div className="app-grid">
-                {favoriteApps.map((app) => (
-                  <AppCard
-                    key={app.id}
-                    app={app}
-                    onDelete={handleDeleteApp}
-                    onEdit={isSuperUser ? handleOpenEditApp : undefined}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="inline-empty">
-                <Star size={20} />
-                <span>Belum ada aplikasi favorit.</span>
-                <Link to="/apps">Jelajahi aplikasi</Link>
-              </div>
-            )}
-          </section>
-
-          <section className="content-section">
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">Aktivitas</span>
-                <h2>Baru dibuka</h2>
-              </div>
-            </div>
-
-            {isLoadingApps ? (
-              <div className="inline-empty">
-                <span className="empty-clock">◷</span>
-                <span>Memuat aplikasi...</span>
-              </div>
-            ) : appsError ? (
-              <div className="inline-empty">
-                <span>{appsError}</span>
-              </div>
-            ) : recentApps.length ? (
-              <div className="app-grid">
-                {recentApps.map((app) => (
-                  <AppCard
-                    key={app.id}
-                    app={app}
-                    onDelete={handleDeleteApp}
-                    onEdit={isSuperUser ? handleOpenEditApp : undefined}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="inline-empty">
-                <ClockIcon />
-                <span>Aplikasi yang Anda buka akan muncul di sini.</span>
-              </div>
-            )}
-          </section>
         </>
       )}
 

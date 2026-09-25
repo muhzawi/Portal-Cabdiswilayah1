@@ -1,8 +1,6 @@
 import React from "react";
-import { useApp } from "../context/AppContext";
 
 function SettingsPage() {
-  const { theme, changeTheme } = useApp();
   return (
     <div className="page-content">
       <div className="page-heading">
@@ -13,26 +11,6 @@ function SettingsPage() {
         </div>
       </div>
       <div className="settings-card">
-        <div className="setting-row">
-          <div>
-            <h3>Tampilan portal</h3>
-            <p>Pilih tema yang nyaman untuk Anda gunakan.</p>
-          </div>
-          <div className="theme-switcher">
-            <button
-              className={theme === "light" ? "selected" : ""}
-              onClick={() => changeTheme("light")}
-            >
-              Terang
-            </button>
-            <button
-              className={theme === "dark" ? "selected" : ""}
-              onClick={() => changeTheme("dark")}
-            >
-              Gelap
-            </button>
-          </div>
-        </div>
         <div className="setting-row">
           <div>
             <h3>Notifikasi</h3>

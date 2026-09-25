@@ -98,7 +98,7 @@ function Applications() {
       <div className="page-heading">
         <div>
           <span className="eyebrow">Application hub</span>
-          <h1>Semua aplikasi</h1>
+          <h1>Semua Aplikasi</h1>
           <p>Temukan layanan yang membantu pekerjaan Anda.</p>
         </div>
         {isSuperUser && (

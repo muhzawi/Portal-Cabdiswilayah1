@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import PublicNav from "../components/PublicNav";
 import Footer from "../components/Footer";
-import AppCard from "../components/AppCard";
 import { publicApps, getAppIcon } from "../constants";
 import api from "../api";
+import { useApp } from "../context/AppContext";
 
 function Landing() {
+  const { user } = useApp() || {};
+  const navigate = useNavigate();
   const [apps, setApps] = useState(publicApps);
 
   useEffect(() => {
@@ -106,32 +108,48 @@ function Landing() {
             ))}
           </div>
         </section>
-        <section className="featured section container" id="aplikasi">
+        <section className="featured section container" id="kategori">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">Aplikasi unggulan</span>
-              <h2>Layanan dalam genggaman.</h2>
+              <span className="eyebrow">Kategori layanan</span>
+              <h2>Temukan layanan berdasarkan kebutuhan.</h2>
             </div>
-            <Link className="text-link" to="/">
-              Lihat semua aplikasi <ArrowRight size={16} />
-            </Link>
+            <p className="section-heading-description">
+              Jelajahi portal berdasarkan area kerja Anda. Masuk untuk membuka
+              aplikasi di dalam setiap kategori.
+            </p>
           </div>
-          <div className="category-groups">
-            {Object.entries(groupedApps).map(([catName, catApps]) => (
-              <div key={catName} className="category-group-section">
-                <div className="category-group-header">
-                  <div className="category-title-wrap">
-                    <span className="category-pill-badge">{catName}</span>
-                    <span className="category-count">({catApps.length} aplikasi)</span>
+          <div className="category-showcase-grid">
+            {Object.entries(groupedApps).map(([catName, catApps]) => {
+              const Icon = getAppIcon(catName);
+              return (
+                <article className="category-card category-card--showcase" key={catName}>
+                  <div className="category-card-icon">
+                    <Icon size={25} />
                   </div>
-                </div>
-                <div className="featured-grid">
-                  {catApps.map((app) => (
-                    <AppCard key={app.id} app={app} showFavorite={false} />
-                  ))}
-                </div>
-              </div>
-            ))}
+                  <div>
+                    <span className="category-count">{catApps.length} aplikasi tersedia</span>
+                    <h3>{catName}</h3>
+                    <p>
+                      Layanan terkurasi untuk mendukung pekerjaan di bidang{" "}
+                      {catName.toLowerCase()}.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="category-card-note"
+                    onClick={() => navigate(user ? "/dashboard" : "/login")}
+                    aria-label={
+                      user ? "Buka dashboard" : "Masuk untuk membuka layanan"
+                    }
+                    title={user ? "Buka dashboard" : "Masuk untuk membuka layanan"}
+                  >
+                    <span>Selengkapnya</span>
+                    <ArrowRight size={17} />
+                  </button>
+                </article>
+              );
+            })}
           </div>
         </section>
       </main>

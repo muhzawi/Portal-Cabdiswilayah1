@@ -24,15 +24,15 @@ function Footer() {
         <div>
           <span className="footer-title">Kontak & Informasi</span>
           <a
-            href="mailto:info@disdikwil1.sumutprov.go.id"
+            href="mailto:cabdiswil.1pelayanan@gmail.com"
             style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
           >
-            <Mail size={14} /> info@disdikwil1.sumutprov.go.id
+            <Mail size={14} /> cabdiswil.1pelayanan@gmail.com
           </a>
           <span
             style={{ display: "inline-flex", alignItems: "flex-start", gap: "6px" }}
           >
-            <MapPin size={14} style={{ marginTop: "2px", flexShrink: 0 }} /> Medan & Deli Serdang, Sumut
+            <MapPin size={14} style={{ marginTop: "2px", flexShrink: 0 }} /> Sumatera Utara, Indonesia
           </span>
           <a
             href="https://disdik.sumutprov.go.id"
