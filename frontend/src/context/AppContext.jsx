@@ -16,8 +16,6 @@ export function AppProvider({ children }) {
   const [user, setUser] = useState(() => readStorage("portal_user", null));
   const [favorites, setFavorites] = useState(() => readStorage("portal_favorites", []));
   const [recent, setRecent] = useState(() => readStorage("portal_recent_apps", []));
-  const [theme, setTheme] = useState(() => localStorage.getItem("portal_theme") || "light");
-  
   const [apps, setApps] = useState([]);
   const [isLoadingApps, setIsLoadingApps] = useState(false);
   const [appsError, setAppsError] = useState("");
@@ -33,7 +31,9 @@ export function AppProvider({ children }) {
         id: userData.id,
         name: userData.profile?.full_name || email.split("@")[0],
         email: userData.email,
-        role: userData.profile?.role
+        role: userData.profile?.role,
+        institution: userData.profile?.institution || "",
+        nip: userData.profile?.nip || "",
       };
       
       localStorage.setItem('portal_token', session.access_token);
@@ -93,16 +93,23 @@ export function AppProvider({ children }) {
     setRecent(next);
     persist("portal_recent_apps", next);
   };
-  const changeTheme = (next) => {
-    setTheme(next);
-    localStorage.setItem("portal_theme", next);
+  const updateUser = (profile) => {
+    const nextUser = {
+      ...user,
+      name: profile.full_name,
+      email: profile.email,
+      institution: profile.institution || "",
+      nip: profile.nip || "",
+    };
+    setUser(nextUser);
+    persist("portal_user", nextUser);
   };
 
   return (
     <AppContext.Provider
       value={{
-        user, favorites, recent, theme, apps, isLoadingApps, appsError,
-        login, logout, toggleFavorite, addRecent, changeTheme, refreshApps
+        user, favorites, recent, apps, isLoadingApps, appsError,
+        login, logout, toggleFavorite, addRecent, refreshApps, updateUser
       }}
     >
       {children}

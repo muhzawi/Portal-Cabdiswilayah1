@@ -21,6 +21,7 @@ create table public.applications (
   status public.application_status not null default 'available',
   version text not null default '1.0.0',
   url text not null check (url ~ '^https?://'),
+  icon_url text check (icon_url is null or icon_url ~ '^https?://'),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -21,11 +21,19 @@ export async function requireAuth(req, res, next) {
   // Ambil role dari database agar role tidak dapat dipalsukan dari client.
   const { data: profile, error: profileError } = await supabaseAdmin
     .from("profiles")
-    .select("id, full_name, role")
+    .select("*")
     .eq("id", data.user.id)
-    .single();
+    .maybeSingle();
 
-  if (profileError) return next(profileError);
+  if (profileError) {
+    console.error("requireAuth profileError:", profileError);
+    return res.status(500).json({ error: "Gagal mengambil data profil pengguna." });
+  }
+
+  if (!profile) {
+    return res.status(401).json({ error: "Profil pengguna tidak ditemukan. Silakan login kembali." });
+  }
+
   req.user = { ...data.user, profile };
   req.accessToken = token;
   next();

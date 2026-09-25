@@ -1,11 +1,10 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight, Pencil, Star, Trash2 } from "lucide-react";
+import { ArrowRight, ExternalLink, Pencil, Star, Trash2 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import StatusBadge from "./ui/StatusBadge";
 import { getAppIcon } from "../constants";
 
-function AppCard({ app, showFavorite = true, onDelete, onEdit }) {
+function AppCard({ app, showFavorite = true, onDelete, onEdit, directLink = false }) {
   const { user, favorites = [], toggleFavorite, addRecent } = useApp() || {};
   const Icon = app.icon || getAppIcon(app.category);
   const isFav = favorites.includes(app.id);
@@ -17,9 +16,13 @@ function AppCard({ app, showFavorite = true, onDelete, onEdit }) {
     <article className="app-card">
       <div className="app-card-top">
         <div className="app-icon">
-          {React.createElement(Icon, { size: 22 })}
+          {app.icon_url ? (
+            <img src={app.icon_url} alt={`${app.name} icon`} className="app-icon-image" />
+          ) : (
+            React.createElement(Icon, { size: 22 })
+          )}
         </div>
-        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+        <div className="app-card-actions">
           {user?.role === "super_user" && onEdit && (
             <button
               className="icon-button btn-edit-app"
@@ -66,13 +69,41 @@ function AppCard({ app, showFavorite = true, onDelete, onEdit }) {
         <p>{app.description}</p>
         <StatusBadge status={app.status} />
       </div>
-      <Link
-        className={`card-action ${isDisabled ? "disabled" : ""}`}
-        to={user ? `/apps/${app.id}` : "/login"}
-        onClick={() => user && app.status === "available" && addRecent?.(app.id)}
-      >
-        Buka aplikasi <ArrowRight size={16} />
-      </Link>
+      {directLink ? (
+        <a
+          className={`card-action ${isDisabled ? "disabled" : ""}`}
+          href={isDisabled ? undefined : app.url}
+          target="_blank"
+          rel="noreferrer"
+          aria-disabled={isDisabled}
+          onClick={(event) => {
+            if (isDisabled) {
+              event.preventDefault();
+              return;
+            }
+            addRecent?.(app.id);
+          }}
+        >
+          Buka aplikasi <ExternalLink size={16} />
+        </a>
+      ) : (
+        <a
+          className={`card-action ${isDisabled ? "disabled" : ""}`}
+          href={isDisabled ? undefined : app.url}
+          target="_blank"
+          rel="noreferrer"
+          aria-disabled={isDisabled}
+          onClick={(event) => {
+            if (isDisabled) {
+              event.preventDefault();
+              return;
+            }
+            addRecent?.(app.id);
+          }}
+        >
+          Buka aplikasi <ArrowRight size={16} />
+        </a>
+      )}
     </article>
   );
 }

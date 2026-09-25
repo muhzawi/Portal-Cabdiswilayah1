@@ -10,19 +10,20 @@ import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
 import ApplicationDetail from "./pages/ApplicationDetail";
 import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
 import SettingsPage from "./pages/SettingsPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 function ProtectedApp() {
-  const { theme } = useApp();
   return (
-    <div className={`app ${theme}`}>
+    <div className="app">
       <DashboardLayout>
         <Routes>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/apps" element={<Applications />} />
           <Route path="/apps/:id" element={<ApplicationDetail />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="profile/edit" element={<EditProfile />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

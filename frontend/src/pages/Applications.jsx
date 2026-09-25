@@ -61,6 +61,18 @@ function Applications() {
     [query, category, sort, favorites, recent, filter, apps],
   );
 
+  const groupedApps = useMemo(() => {
+    const groups = {};
+    filtered.forEach((app) => {
+      const cat = app.category || "Lainnya";
+      if (!groups[cat]) {
+        groups[cat] = [];
+      }
+      groups[cat].push(app);
+    });
+    return groups;
+  }, [filtered]);
+
   const handleDeleteApp = async (appToDelete) => {
     if (
       !window.confirm(
@@ -86,7 +98,7 @@ function Applications() {
       <div className="page-heading">
         <div>
           <span className="eyebrow">Application hub</span>
-          <h1>Semua aplikasi</h1>
+          <h1>Semua Aplikasi</h1>
           <p>Temukan layanan yang membantu pekerjaan Anda.</p>
         </div>
         {isSuperUser && (
@@ -147,14 +159,26 @@ function Applications() {
           <h3>{appsError}</h3>
         </div>
       ) : filtered.length ? (
-        <div className="app-grid">
-          {filtered.map((app) => (
-            <AppCard
-              key={app.id}
-              app={app}
-              onDelete={handleDeleteApp}
-              onEdit={isSuperUser ? handleOpenEditApp : undefined}
-            />
+        <div className="category-groups">
+          {Object.entries(groupedApps).map(([catName, catApps]) => (
+            <section key={catName} className="category-group-section">
+              <div className="category-group-header">
+                <div className="category-title-wrap">
+                  <span className="category-pill-badge">{catName}</span>
+                  <span className="category-count">({catApps.length} aplikasi)</span>
+                </div>
+              </div>
+              <div className="app-grid">
+                {catApps.map((app) => (
+                  <AppCard
+                    key={app.id}
+                    app={app}
+                    onDelete={handleDeleteApp}
+                    onEdit={isSuperUser ? handleOpenEditApp : undefined}
+                  />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       ) : (
