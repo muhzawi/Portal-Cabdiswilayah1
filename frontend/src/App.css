@@ -265,7 +265,7 @@ p {
   gap: 0px;
   min-height: auto;
   padding-top: 40px;
-  padding-bottom: 2px;
+  padding-bottom: 20px;
   text-align: center;
 }
 /* Baris foto pejabat berdampingan */
@@ -273,8 +273,32 @@ p {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  gap: 32px;
+  gap: 20px; /* Gap rapat */
   width: 100%;
+  margin-top: 20px;
+  position: relative;
+  padding: 20px 0;
+}
+
+/* Background decorative untuk section foto */
+.hero-photos-row::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 85%;
+  height: 60%;
+  background: radial-gradient(ellipse at center bottom, rgba(36, 107, 71, 0.04) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+}
+
+/* Grup foto pejabat */
+.hero-photos-group {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px; /* Gap konsisten */
 }
 .hero-copy {
   max-width: 580px;
@@ -285,14 +309,15 @@ p {
   padding-bottom: 0;
 }
 .hero-copy--centered h1 {
-  margin: 12px 0 12px;
-  font-size: clamp(1.6rem, 3vw, 2.8rem);
+  margin: 12px 0 16px;
+  font-size: clamp(1.8rem, 3.5vw, 3rem);
   line-height: 1.15;
 }
 .hero-copy--centered p {
-  max-width: 480px;
-  margin: 0 auto;
-  font-size: 1rem;
+  max-width: 520px;
+  margin: 0 auto 8px;
+  font-size: 1.05rem;
+  line-height: 1.65;
 }
 .hero-copy--centered .hero-actions {
   justify-content: center;
@@ -354,6 +379,22 @@ em {
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.hero-official-photo:hover {
+  transform: translateY(-8px);
+}
+
+/* Container untuk foto besar */
+.hero-official-photo--large {
+  position: relative;
+}
+
+/* Container untuk foto kecil - alignment otomatis via flex-end parent */
+.hero-official-photo--small {
+  position: relative;
+  margin-bottom: 0px; /* Hapus margin agar sejajar di bawah */
 }
 /* Foto pejabat */
 .hero-official-img {
@@ -361,8 +402,29 @@ em {
   width: 360px;
   height: 440px;
   object-fit: contain;
-  object-position: center center;
+  object-position: center bottom;
   filter: drop-shadow(0 16px 40px rgba(26, 63, 42, 0.2));
+  transition: filter 0.3s ease;
+}
+
+.hero-official-photo:hover .hero-official-img {
+  filter: drop-shadow(0 20px 50px rgba(26, 63, 42, 0.3));
+}
+
+/* Foto pejabat ukuran besar (Gubernur & Wakil) */
+.hero-official-img--large {
+  width: 480px;
+  height: 500px;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+/* Foto pejabat ukuran kecil (Kepala Dinas) - sedikit lebih kecil */
+.hero-official-img--small {
+  width: 380px;
+  height: 450px;
+  object-fit: contain;
+  object-position: center bottom;
 }
 .hero-art {
   min-height: 390px;
@@ -734,6 +796,12 @@ em {
   padding: 10px 20px;
   border-radius: 50px;
   letter-spacing: -0.02em;
+}
+
+/* Badge kecil untuk foto Kepala Dinas - hampir sama ukuran */
+.officials-badge--sm {
+  font-size: 0.75rem;
+  padding: 9px 18px;
 }
 /* ===== END OFFICIALS SECTION ===== */
 
@@ -1732,10 +1800,29 @@ em {
   }
   .hero-photos-row {
     margin-top: 6px;
-    gap: 12px;
+    gap: 16px; /* Gap rapat di mobile */
+    flex-wrap: wrap;
+  }
+  
+  .hero-photos-group {
+    gap: 16px; /* Gap konsisten di mobile */
   }
   .hero-official-img {
     width: clamp(160px, 45vw, 205px);
+    height: auto;
+    max-height: 270px;
+  }
+  
+  /* Mobile: foto besar tetap proporsional lebih besar */
+  .hero-official-img--large {
+    width: clamp(170px, 48vw, 220px);
+    height: auto;
+    max-height: 280px;
+  }
+  
+  /* Mobile: foto kecil hampir sama, beda tipis */
+  .hero-official-img--small {
+    width: clamp(155px, 44vw, 200px);
     height: auto;
     max-height: 270px;
   }
