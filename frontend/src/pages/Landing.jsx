@@ -51,30 +51,37 @@ function Landing() {
             </p>
           </div>
 
-          {/* 2. Foto Pejabat — berdampingan di tengah */}
+          {/* 2. Foto Pejabat — Gubernur & Wakil lebih besar, Kepala Dinas lebih kecil */}
           <div className="hero-photos-row">
-            <div className="hero-official-photo">
-              <img
-                src="/pejabat/1.webp"
-                alt="Kepala Dinas Pendidikan Provinsi Sumatera Utara"
-                className="hero-official-img"
-              />
+            {/* Grup utama: Gubernur & Wakil */}
+            <div className="hero-photos-group hero-photos-group--main">
+              <div className="hero-official-photo hero-official-photo--large">
+                <img
+                  src="/pejabat/1.webp"
+                  alt="Gubernur dan Wakil Gubernur Sumatera Utara"
+                  className="hero-official-img hero-official-img--large"
+                />
+              </div>
             </div>
-            <div className="hero-official-photo">
-              <img
-                src="/pejabat/2.webp"
-                alt="Kepala Cabang Dinas Pendidikan Wilayah I"
-                className="hero-official-img"
-              />
+            
+            {/* Foto terpisah: Kepala Dinas */}
+            <div className="hero-photos-group hero-photos-group--secondary">
+              <div className="hero-official-photo hero-official-photo--small">
+                <img
+                  src="/pejabat/2.webp"
+                  alt="Kepala Dinas Pendidikan Provinsi Sumatera Utara"
+                  className="hero-official-img hero-official-img--small"
+                />
+              </div>
             </div>
           </div>
 
-          {/* 3. Button */}
-          <div className="hero-actions hero-actions--centered">
+          
+          {/* <div className="hero-actions hero-actions--centered">
             <a href="/login" className="button button-primary">
               Masuk ke Portal <ArrowRight size={16} />
             </a>
-          </div>
+          </div> */}
         </section>
 
 
@@ -108,7 +115,7 @@ function Landing() {
             ))}
           </div>
         </section>
-        <section className="featured section container" id="kategori">
+        <section className="featured section container" id="aplikasi">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Kategori layanan</span>
