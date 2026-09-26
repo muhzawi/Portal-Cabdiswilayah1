@@ -76,12 +76,12 @@ function Landing() {
             </div>
           </div>
 
-          {/* 3. Button */}
-          <div className="hero-actions hero-actions--centered">
+          
+          {/* <div className="hero-actions hero-actions--centered">
             <a href="/login" className="button button-primary">
               Masuk ke Portal <ArrowRight size={16} />
             </a>
-          </div>
+          </div> */}
         </section>
 
 
@@ -115,7 +115,7 @@ function Landing() {
             ))}
           </div>
         </section>
-        <section className="featured section container" id="kategori">
+        <section className="featured section container" id="aplikasi">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Kategori layanan</span>
