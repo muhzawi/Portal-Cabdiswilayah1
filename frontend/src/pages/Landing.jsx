@@ -54,7 +54,7 @@ function Landing() {
           {/* 2. Foto Pejabat — Gubernur & Wakil lebih besar, Kepala Dinas lebih kecil */}
           <div className="hero-photos-row">
             {/* Grup utama: Gubernur & Wakil */}
-            <div className="hero-photos-group hero-photos-group--main">
+            <div className="hero-photos-main">
               <div className="hero-official-photo hero-official-photo--large">
                 <img
                   src="/pejabat/1.webp"
@@ -63,9 +63,9 @@ function Landing() {
                 />
               </div>
             </div>
-            
+
             {/* Foto terpisah: Kepala Dinas */}
-            <div className="hero-photos-group hero-photos-group--secondary">
+            <div className="hero-photos-secondary">
               <div className="hero-official-photo hero-official-photo--small">
                 <img
                   src="/pejabat/2.webp"
@@ -76,16 +76,12 @@ function Landing() {
             </div>
           </div>
 
-          
           {/* <div className="hero-actions hero-actions--centered">
             <a href="/login" className="button button-primary">
               Masuk ke Portal <ArrowRight size={16} />
             </a>
           </div> */}
         </section>
-
-
-
 
         <section className="steps section container" id="cara-kerja">
           <div className="section-heading centered">
@@ -130,12 +126,17 @@ function Landing() {
             {Object.entries(groupedApps).map(([catName, catApps]) => {
               const Icon = getAppIcon(catName);
               return (
-                <article className="category-card category-card--showcase" key={catName}>
+                <article
+                  className="category-card category-card--showcase"
+                  key={catName}
+                >
                   <div className="category-card-icon">
                     <Icon size={25} />
                   </div>
                   <div>
-                    <span className="category-count">{catApps.length} aplikasi tersedia</span>
+                    <span className="category-count">
+                      {catApps.length} aplikasi tersedia
+                    </span>
                     <h3>{catName}</h3>
                     <p>
                       Layanan terkurasi untuk mendukung pekerjaan di bidang{" "}
@@ -149,7 +150,9 @@ function Landing() {
                     aria-label={
                       user ? "Buka dashboard" : "Masuk untuk membuka layanan"
                     }
-                    title={user ? "Buka dashboard" : "Masuk untuk membuka layanan"}
+                    title={
+                      user ? "Buka dashboard" : "Masuk untuk membuka layanan"
+                    }
                   >
                     <span>Selengkapnya</span>
                     <ArrowRight size={17} />
