@@ -366,12 +366,7 @@ em {
   border-radius: 50%;
   background: var(--yellow);
 }
-.hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 0px;
-  margin-top: 5px;
-}
+
 .text-link {
   display: inline-flex;
   align-items: center;
@@ -382,7 +377,7 @@ em {
 }
 .hero-official-photo {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   transition: transform 0.3s ease;
 }
@@ -424,6 +419,7 @@ em {
 .hero-official-img--small {
   width: 380px;
   height: 450px;
+  margin-left: 20px;
   object-fit: contain;
   object-position: center bottom;
 }
@@ -2194,6 +2190,20 @@ em {
     margin-top: 0;
     gap: 16px; /* Gap rapat di mobile */
     flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .hero-photos-main,
+  .hero-photos-secondary {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+  }
+
+  .hero-photos-secondary img {
+    margin-left: 0;
   }
 
   .hero-photos-group {
@@ -2203,6 +2213,7 @@ em {
     width: clamp(160px, 45vw, 205px);
     height: auto;
     max-height: 270px;
+    margin: 0 auto;
   }
 
   /* Mobile: foto besar tetap proporsional lebih besar */
@@ -2212,12 +2223,15 @@ em {
     max-height: 280px;
   }
 
-  /* Mobile: foto kecil hampir sama, beda tipis */
+  /* Mobile: foto kecil diposisikan persis di tengah */
   .hero-official-img--small {
     width: clamp(155px, 44vw, 200px);
     height: auto;
     max-height: 270px;
+    margin: 0 auto;
+    display: block;
   }
+
   .hero-copy--centered h1 {
     font-size: clamp(1.2rem, 5vw, 1.6rem);
     margin: 6px 0 8px;
