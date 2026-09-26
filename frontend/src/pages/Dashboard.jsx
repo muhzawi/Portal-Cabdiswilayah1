@@ -38,6 +38,7 @@ function Dashboard() {
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [usersError, setUsersError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("semua");
   const [selectedUser, setSelectedUser] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
@@ -212,16 +213,24 @@ function Dashboard() {
     [usersList],
   );
 
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
   const filteredUsers = useMemo(() => {
     return usersList.filter((u) => {
       const matchesSearch =
-        u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email?.toLowerCase().includes(searchQuery.toLowerCase());
+        u.full_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        u.email?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
       const matchesStatus =
         statusFilter === "semua" || u.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [usersList, searchQuery, statusFilter]);
+  }, [usersList, debouncedSearchQuery, statusFilter]);
 
   const handleApprove = async (id) => {
     setActionLoadingId(id);
