@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PublicNav from "../components/PublicNav";
 import Footer from "../components/Footer";
+import InteractiveHero from "../components/InteractiveHero";
 import { publicApps, getAppIcon } from "../constants";
 import api from "../api";
 import { useApp } from "../context/AppContext";
@@ -39,19 +40,15 @@ function Landing() {
     <div className="landing">
       <PublicNav />
       <main>
-        <section className="hero hero--officials container">
-          {/* 1. Teks Tengah */}
-          <div className="hero-copy hero-copy--centered">
-            <h1>
-              Satu Portal untuk <em>semua layanan</em> pendidikan.
-            </h1>
-            <p>
-              Portal terpusat Cabang Dinas Pendidikan Wilayah I Sumatera Utara
-              untuk menemukan dan mengakses aplikasi kerja dengan lebih mudah.
-            </p>
-          </div>
+        {/* Hero interaktif dengan foto background full tanpa celah kosong */}
+        <InteractiveHero user={user} />
 
-          {/* 2. Foto Pejabat — Gubernur & Wakil lebih besar, Kepala Dinas lebih kecil */}
+        {/* Pimpinan Pemerintahan & Dinas Pendidikan */}
+        <section className="leaders-showcase-section container">
+          <div className="leaders-showcase-header">
+            <span className="eyebrow">Pimpinan Daerah</span>
+            <h2>Pembina & Pimpinan Pendidikan Sumatera Utara</h2>
+          </div>
           <div className="hero-photos-row">
             {/* Grup utama: Gubernur & Wakil */}
             <div className="hero-photos-main">
@@ -75,12 +72,6 @@ function Landing() {
               </div>
             </div>
           </div>
-
-          {/* <div className="hero-actions hero-actions--centered">
-            <a href="/login" className="button button-primary">
-              Masuk ke Portal <ArrowRight size={16} />
-            </a>
-          </div> */}
         </section>
 
         <section className="steps section container" id="cara-kerja">

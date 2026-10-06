@@ -65,7 +65,10 @@ p {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--bg);
+  background: rgba(246, 248, 252, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(225, 231, 240, 0.75);
   transition:
     background-color 0.2s,
     box-shadow 0.2s;
@@ -245,6 +248,486 @@ p {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* =========================================================
+   INTERACTIVE HERO SECTION (FULL-BLEED & NO GAPS)
+   ========================================================= */
+
+.interactive-hero-wrapper {
+  position: relative;
+  width: 100%;
+  height: clamp(560px, 56.25vw, 850px);
+  min-height: 540px;
+  overflow: hidden;
+  background-color: #122238;
+  user-select: none;
+}
+
+.interactive-hero-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.interactive-hero-canvas {
+  position: absolute;
+  inset: -3% -2%;
+  width: 104%;
+  height: 106%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.interactive-hero-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  pointer-events: none;
+}
+
+/* Dynamic flashlight/spotlight following cursor */
+.interactive-hero-spotlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+
+/* Seamless blend overlays - no gaps */
+.interactive-hero-top-blend {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(to bottom, rgba(18, 34, 56, 0.25) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.interactive-hero-bottom-blend {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(246, 248, 252, 0.3) 45%,
+    rgba(246, 248, 252, 0.85) 80%,
+    var(--bg, #f6f8fc) 100%
+  );
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* Hotspots layer */
+.interactive-hero-hotspots-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.hero-hotspot-anchor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 12;
+}
+
+.hero-hotspot-anchor.is-active {
+  z-index: 30;
+}
+
+/* Hotspot beacon pin */
+.hero-hotspot-pin {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 8px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1.5px solid var(--spot-color, var(--primary));
+  border-radius: 999px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+
+.hero-hotspot-pin:hover,
+.hero-hotspot-anchor.is-active .hero-hotspot-pin {
+  transform: scale(1.08);
+  background: #ffffff;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35), 0 0 16px var(--spot-color);
+}
+
+.hero-hotspot-pulse {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--spot-color, var(--primary));
+  opacity: 0.75;
+  animation: heroPulseRing 2.2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes heroPulseRing {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.85;
+  }
+  65% {
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.4);
+    opacity: 0;
+  }
+}
+
+.hero-hotspot-core {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--spot-color, var(--primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px var(--spot-color);
+}
+
+.hero-hotspot-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.hero-hotspot-badge-pill {
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #121b2d;
+  white-space: nowrap;
+}
+
+/* Hotspot Popover Card */
+.hero-hotspot-popover {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 16px;
+  box-shadow: 0 20px 48px rgba(15, 30, 60, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+  text-align: left;
+  animation: popoverFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  z-index: 40;
+}
+
+.hero-hotspot-popover--up {
+  bottom: calc(100% + 14px);
+  top: auto;
+}
+
+.hero-hotspot-popover--down {
+  top: calc(100% + 14px);
+  bottom: auto;
+}
+
+.hero-popover-align-left {
+  left: -20px !important;
+  transform: none !important;
+}
+
+.hero-popover-align-right {
+  left: auto !important;
+  right: -20px !important;
+  transform: none !important;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.hero-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.hero-popover-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hero-popover-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-popover-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ink);
+}
+
+.hero-popover-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.25;
+  margin-bottom: 6px;
+}
+
+.hero-popover-desc {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.hero-popover-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.hero-tag-item {
+  font-size: 0.7rem;
+  color: #3b5072;
+  background: #f0f4fa;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.hero-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hero-popover-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hero-popover-btn--primary {
+  background: var(--primary);
+  color: #fff;
+}
+.hero-popover-btn--primary:hover {
+  background: var(--primary-800);
+  transform: translateX(2px);
+}
+
+/* Floating Controls Bar at Bottom of Hero */
+.interactive-hero-controls-bar {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  width: min(1080px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 999px;
+  box-shadow: 0 12px 36px rgba(10, 25, 50, 0.16), 0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+}
+
+.hero-pills-cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hero-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hero-nav-pill:hover {
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.hero-nav-pill.is-active {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(30, 86, 183, 0.35);
+}
+
+.hero-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-action-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hero-action-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.hero-action-chip--primary {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 4px 14px rgba(30, 86, 183, 0.3);
+}
+
+.hero-action-chip--primary:hover {
+  background: var(--primary-800);
+  color: #ffffff;
+}
+
+/* Subtle Interactive Hint */
+.interactive-hero-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #3b5072;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.95);
+}
+
+.hint-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  animation: pulseGreen 1.8s infinite;
+}
+
+@keyframes pulseGreen {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* Leaders Showcase Section */
+.leaders-showcase-section {
+  padding: 48px 0 20px;
+  text-align: center;
+}
+
+.leaders-showcase-header {
+  margin-bottom: 24px;
+}
+
+.leaders-showcase-header h2 {
+  margin-top: 6px;
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+}
+
+@media (max-width: 768px) {
+  .interactive-hero-wrapper {
+    min-height: 440px;
+    height: 60vh;
+  }
+  .interactive-hero-controls-bar {
+    border-radius: 18px;
+    padding: 10px;
+    justify-content: center;
+  }
+  .hero-hotspot-badge-pill {
+    display: none;
+  }
+  .hero-hotspot-pin {
+    padding: 6px;
+  }
+  .hero-hotspot-popover {
+    width: 250px;
+  }
+  .interactive-hero-hint {
+    display: none;
+  }
+}
+
 .hero {
   min-height: 570px;
   display: grid;
