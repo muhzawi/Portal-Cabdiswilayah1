@@ -1,12 +1,85 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { createHash, randomBytes } from "node:crypto";
 import db from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import { writeAuditLog } from "../audit.js";
+import { isSmtpConfigured, sendPasswordResetEmail } from "../email.js";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+const genericResetResponse = {
+  message: "Jika email terdaftar, instruksi reset password akan dikirim.",
+};
+
+router.post("/forgot-password", async (req, res, next) => {
+  try {
+    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "Alamat email tidak valid." });
+    }
+    if (!isSmtpConfigured()) {
+      return res.status(503).json({
+        error: "Layanan email belum dikonfigurasi. Hubungi administrator portal.",
+      });
+    }
+
+    const [users] = await db.query(
+      "SELECT id, full_name, email FROM users WHERE email = ?",
+      [email],
+    );
+    if (users.length === 0) return res.json(genericResetResponse);
+
+    const user = users[0];
+    await db.query(
+      "DELETE FROM password_reset_tokens WHERE user_id = ? AND created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)",
+      [user.id],
+    );
+    const [attempts] = await db.query(
+      "SELECT COUNT(*) AS total FROM password_reset_tokens WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)",
+      [user.id],
+    );
+    if (Number(attempts[0]?.total || 0) >= 3) return res.json(genericResetResponse);
+
+    const rawToken = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    await db.query(
+      "UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL",
+      [user.id],
+    );
+    await db.query(
+      "INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))",
+      [tokenHash, user.id],
+    );
+
+    const resetUrl = process.env.RESET_PASSWORD_URL
+      ? new URL(process.env.RESET_PASSWORD_URL)
+      : new URL("/reset-password", process.env.FRONTEND_URL || "http://localhost:5173");
+    resetUrl.searchParams.set("token", rawToken);
+
+    try {
+      await sendPasswordResetEmail({
+        to: user.email,
+        fullName: user.full_name,
+        resetUrl: resetUrl.toString(),
+      });
+    } catch (error) {
+      await db.query(
+        "UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = ?",
+        [tokenHash],
+      );
+      console.error("Email reset password gagal dikirim:", error.message);
+      return res.status(503).json({
+        error: "Email reset gagal dikirim. Periksa konfigurasi SMTP lalu coba lagi.",
+      });
+    }
+
+    res.json(genericResetResponse);
+  } catch (error) {
+    next(error);
+  }
+});
 
 // POST /auth/signup (Pendaftaran Manual / Admin Mode)
 router.post("/signup", async (req, res, next) => {
@@ -116,7 +189,15 @@ router.post("/login", async (req, res, next) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, status: user.status, full_name: user.full_name },
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        full_name: user.full_name,
+        institution: user.institution || "",
+        nip: user.nip || "",
+      },
       JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -125,10 +206,69 @@ router.post("/login", async (req, res, next) => {
 
     res.json({
       token,
-      user: { id: user.id, full_name: user.full_name, email: user.email, role: user.role, status: user.status },
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        institution: user.institution || "",
+        nip: user.nip || "",
+      },
     });
   } catch (error) {
     next(error);
+  }
+});
+
+router.post("/reset-password/confirm", async (req, res, next) => {
+  const { token, password, confirmPassword } = req.body;
+  if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token)) {
+    return res.status(400).json({ error: "Tautan reset password tidak valid atau kedaluwarsa." });
+  }
+  if (typeof password !== "string" || password.length < 8) {
+    return res.status(400).json({ error: "Password baru minimal 8 karakter." });
+  }
+  if (password !== confirmPassword) {
+    return res.status(400).json({ error: "Konfirmasi password tidak cocok." });
+  }
+
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  const connection = await db.getConnection();
+  let transactionStarted = false;
+  try {
+    await connection.beginTransaction();
+    transactionStarted = true;
+    const [tokens] = await connection.query(
+      "SELECT user_id FROM password_reset_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW() FOR UPDATE",
+      [tokenHash],
+    );
+    if (tokens.length === 0) {
+      await connection.rollback();
+      transactionStarted = false;
+      return res.status(400).json({ error: "Tautan reset password tidak valid atau kedaluwarsa." });
+    }
+
+    const userId = tokens[0].user_id;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await connection.query(
+      "UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?",
+      [hashedPassword, userId],
+    );
+    await connection.query(
+      "UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL",
+      [userId],
+    );
+    await connection.commit();
+    transactionStarted = false;
+
+    await writeAuditLog({ actorId: userId, action: "password_reset" });
+    res.json({ message: "Password berhasil diperbarui. Silakan masuk dengan password baru." });
+  } catch (error) {
+    if (transactionStarted) await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
   }
 });
 

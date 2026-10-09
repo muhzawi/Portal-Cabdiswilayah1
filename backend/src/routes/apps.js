@@ -9,7 +9,7 @@ const router = Router();
 router.get("/public-apps", async (_req, res, next) => {
   try {
     const [rows] = await db.query(
-      "SELECT id, name, category, description, status, version, url FROM applications ORDER BY name ASC"
+      "SELECT id, name, category, description, status, version, url, icon_url FROM applications ORDER BY name ASC"
     );
     res.json({ applications: rows });
   } catch (error) {
@@ -25,14 +25,14 @@ router.get("/apps", requireAuth, async (req, res, next) => {
 
     if (["super_user", "superadmin", "admin"].includes(userRole)) {
       const [rows] = await db.query(
-        "SELECT id, name, category, description, status, version, url FROM applications ORDER BY name ASC"
+        "SELECT id, name, category, description, status, version, url, icon_url FROM applications ORDER BY name ASC"
       );
       return res.json({ applications: rows });
     }
 
     // Untuk medium_user, ambil hanya aplikasi yang diizinkan
     const sql = `
-      SELECT a.id, a.name, a.category, a.description, a.status, a.version, a.url 
+      SELECT a.id, a.name, a.category, a.description, a.status, a.version, a.url, a.icon_url
       FROM applications a
       INNER JOIN user_application_access uaa ON a.id = uaa.application_id
       WHERE uaa.user_id = ?
@@ -49,7 +49,7 @@ router.get("/apps", requireAuth, async (req, res, next) => {
 router.get("/apps/:id", requireAuth, requireApplicationAccess, async (req, res, next) => {
   try {
     const [rows] = await db.query(
-      "SELECT id, name, category, description, status, version, url FROM applications WHERE id = ?",
+      "SELECT id, name, category, description, status, version, url, icon_url FROM applications WHERE id = ?",
       [req.params.id]
     );
 
@@ -89,12 +89,15 @@ router.get("/apps/:id/redirect", requireAuth, requireApplicationAccess, async (r
 // POST /api/apps (Admin dan Super Admin)
 router.post("/apps", requireAuth, requireRole("admin", "superadmin", "super_user"), async (req, res, next) => {
   try {
-    const { name, category, description, status, version, url, id } = req.body;
+    const { name, category, description, status, version, url, id, icon_url } = req.body;
 
     if (!name?.trim()) return res.status(400).json({ error: "Nama aplikasi wajib diisi." });
     if (!category?.trim()) return res.status(400).json({ error: "Kategori aplikasi wajib diisi." });
     if (!url || !/^https?:\/\//.test(url.trim())) {
       return res.status(400).json({ error: "URL aplikasi wajib diawali http:// atau https://" });
+    }
+    if (icon_url != null && (typeof icon_url !== "string" || icon_url.length > 3700000)) {
+      return res.status(400).json({ error: "Ikon aplikasi tidak valid atau terlalu besar." });
     }
 
     const generatedId =
@@ -116,8 +119,8 @@ router.post("/apps", requireAuth, requireRole("admin", "superadmin", "super_user
     }
 
     await db.query(
-      "INSERT INTO applications (id, name, category, description, status, version, url) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [appId, appName, appCategory, appDescription, appStatus, appVersion, appUrl]
+      "INSERT INTO applications (id, name, category, description, status, version, url, icon_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [appId, appName, appCategory, appDescription, appStatus, appVersion, appUrl, icon_url || null]
     );
     await writeAuditLog({ actorId: req.user.id, action: "application_created", targetId: null, details: { appId, appName } });
 
@@ -129,6 +132,7 @@ router.post("/apps", requireAuth, requireRole("admin", "superadmin", "super_user
       status: appStatus,
       version: appVersion,
       url: appUrl,
+      icon_url: icon_url || null,
     };
 
     res.status(201).json({ message: `Aplikasi ${appName} berhasil ditambahkan!`, application: newApp });
@@ -140,7 +144,7 @@ router.post("/apps", requireAuth, requireRole("admin", "superadmin", "super_user
 // PATCH /api/apps/:id (Super User Only)
 router.patch("/apps/:id", requireAuth, requireRole("super_user"), async (req, res, next) => {
   try {
-    const allowed = ["name", "category", "description", "status", "version", "url"];
+    const allowed = ["name", "category", "description", "status", "version", "url", "icon_url"];
     const updates = [];
     const values = [];
 

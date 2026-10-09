@@ -19,6 +19,8 @@ function AppFormModal({ isOpen, onClose, appToEdit = null, onSuccess }) {
   const [selectedCategory, setSelectedCategory] = useState("Administrasi");
   const [customCategory, setCustomCategory] = useState("");
   const [url, setUrl] = useState("");
+  const [iconUrl, setIconUrl] = useState("");
+  const [iconFile, setIconFile] = useState(null);
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("available");
   const [version, setVersion] = useState("1.0.0");
@@ -41,6 +43,8 @@ function AppFormModal({ isOpen, onClose, appToEdit = null, onSuccess }) {
       // Mode Edit
       setName(appToEdit.name || "");
       setUrl(appToEdit.url || "");
+      setIconUrl(appToEdit.icon_url || "");
+      setIconFile(null);
       setDescription(appToEdit.description || "");
       setStatus(appToEdit.status || "available");
       setVersion(appToEdit.version || "1.0.0");
@@ -59,6 +63,8 @@ function AppFormModal({ isOpen, onClose, appToEdit = null, onSuccess }) {
       setSelectedCategory("Administrasi");
       setCustomCategory("");
       setUrl("");
+      setIconUrl("");
+      setIconFile(null);
       setDescription("");
       setStatus("available");
       setVersion("1.0.0");
@@ -85,14 +91,30 @@ function AppFormModal({ isOpen, onClose, appToEdit = null, onSuccess }) {
     if (!url.trim() || !/^https?:\/\//i.test(url.trim())) {
       return setErrorMsg("URL aplikasi wajib diawali http:// atau https://");
     }
-
     setIsSubmitting(true);
 
     try {
+      let uploadedIconUrl = iconUrl.trim() || null;
+      if (iconFile) {
+        const fileData = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error("Gagal membaca file ikon."));
+          reader.readAsDataURL(iconFile);
+        });
+        const uploadResponse = await api.post("/api/app-icons", {
+          fileName: iconFile.name,
+          mimeType: iconFile.type,
+          data: fileData,
+        });
+        uploadedIconUrl = uploadResponse.data.iconUrl;
+      }
+
       const payload = {
         name: name.trim(),
         category: finalCategory,
         url: url.trim(),
+        icon_url: uploadedIconUrl,
         description: description.trim(),
         status,
         version: version.trim() || "1.0.0",
@@ -222,6 +244,29 @@ function AppFormModal({ isOpen, onClose, appToEdit = null, onSuccess }) {
               placeholder="https://perpustakaan.disdikwil1.go.id"
               required
             />
+          </label>
+
+          <label>
+            Ikon Aplikasi
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                if (file && file.size > 2 * 1024 * 1024) {
+                  setErrorMsg("Ukuran file ikon maksimal 2 MB.");
+                  e.target.value = "";
+                  setIconFile(null);
+                  return;
+                }
+                setErrorMsg("");
+                setIconFile(file);
+              }}
+            />
+            <small className="form-field-help">
+              Opsional. Format PNG, JPG, WEBP, atau SVG. Maksimal 2 MB.
+              {iconUrl && !iconFile ? " Ikon saat ini tetap digunakan jika tidak memilih file baru." : ""}
+            </small>
           </label>
 
           <label>

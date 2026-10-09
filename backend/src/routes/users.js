@@ -179,7 +179,7 @@ router.patch("/:id/role", async (req, res, next) => {
       return res.status(400).json({ error: "Role akun Super Admin yang sedang digunakan tidak dapat diubah." });
     }
     const { role } = req.body;
-    if (!["admin", "staff"].includes(role)) {
+    if (!["superadmin", "admin", "staff"].includes(role)) {
       return res.status(400).json({ error: "Role tidak valid." });
     }
 

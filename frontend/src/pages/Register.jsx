@@ -14,7 +14,6 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -29,6 +28,7 @@ function Register() {
     setError("");
     setSuccess("");
 
+    // Validasi input di frontend
     if (!name.trim()) return setError("Nama lengkap wajib diisi.");
     if (!email.trim()) return setError("Email wajib diisi.");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -119,73 +119,46 @@ function Register() {
                 required
               />
             </label>
-
             <label>
               Password (min. 8 karakter)
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <div className="password-input-wrapper">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder=""
-                  style={{ width: "100%", paddingRight: "40px" }}
                   required
                 />
                 <button
                   type="button"
+                  className="password-toggle-btn"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "var(--muted, #666)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "4px"
-                  }}
-                  tabIndex={-1}
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </label>
-
             <label>
               Konfirmasi password
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <div className="password-input-wrapper">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder=""
-                  style={{ width: "100%", paddingRight: "40px" }}
                   required
                 />
                 <button
                   type="button"
+                  className="password-toggle-btn"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={{
-                    position: "absolute",
-                    right: "10px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "var(--muted, #666)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "4px"
-                  }}
-                  tabIndex={-1}
+                  aria-label={showConfirmPassword ? "Sembunyikan konfirmasi password" : "Tampilkan konfirmasi password"}
                 >
                   {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </label>
-
             {error && <div className="form-error">{error}</div>}
             {success && (
               <div className="form-success">

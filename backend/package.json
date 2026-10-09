@@ -14,7 +14,8 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.0",
-    "mysql2": "^3.24.4"
+    "mysql2": "^3.24.4",
+    "nodemailer": "^10.0.16"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

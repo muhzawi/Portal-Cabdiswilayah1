@@ -30,7 +30,11 @@ function ApplicationDetail() {
       </Link>
       <div className="detail-card">
         <div className="detail-icon">
-          {React.createElement(icon, { size: 34 })}
+          {app.icon_url ? (
+            <img src={app.icon_url} alt="" className="detail-icon-image" />
+          ) : (
+            React.createElement(icon, { size: 34 })
+          )}
         </div>
         <span className="eyebrow">{app.category}</span>
         <h1>{app.name}</h1>

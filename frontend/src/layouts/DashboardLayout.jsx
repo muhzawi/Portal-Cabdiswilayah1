@@ -12,8 +12,8 @@ function DashboardLayout({ children }) {
   const [open, setOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [pendingUsers, setPendingUsers] = useState([]);
-  const isAdmin = ["admin", "superadmin", "super_user"].includes(user?.role);
-  const isSuperAdmin = ["superadmin", "super_user"].includes(user?.role);
+  const isAdmin = ["superadmin", "super_user"].includes(user?.role);
+  const isSuperAdmin = isAdmin;
 
   useEffect(() => {
     if (!isAdmin) return;
