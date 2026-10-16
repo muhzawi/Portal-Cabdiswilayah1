@@ -7,12 +7,6 @@
   --primary-100: #e3ecfc;
   --primary-50: #f0f5ff;
 
-  --green-900: var(--primary-900);
-  --green-800: var(--primary-800);
-  --green-700: var(--primary-700);
-  --green-600: var(--primary-600);
-  --green-100: var(--primary-100);
-  --green-50: var(--primary-50);
   --yellow: #eab308;
   --ink: #121b2d;
   --muted: #5b6b84;
@@ -1041,9 +1035,10 @@ em {
 
 .footer {
   margin-top: 100px;
-  padding: 52px 0 24px;
-  border-top: 1px solid var(--line);
-  background: var(--surface);
+  padding: 56px 0 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0b1f48;
+  color: #b0c6e8;
 }
 .footer-grid {
   display: grid;
@@ -1052,32 +1047,50 @@ em {
 }
 .footer-grid .brand {
   margin-bottom: 17px;
+  color: #ffffff;
+}
+.footer .brand-logo-large {
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
 }
 .footer-grid p {
   max-width: 420px;
-  font-size: 0.78rem;
-  line-height: 1.5;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #b0c6e8;
 }
 .footer-grid > div:not(:first-child) {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  font-size: 0.8rem;
-  color: var(--muted);
+  font-size: 0.82rem;
+  color: #b0c6e8;
+}
+.footer-grid > div:not(:first-child) a {
+  color: #b0c6e8;
+  transition: color 0.2s ease;
+}
+.footer-grid > div:not(:first-child) a:hover {
+  color: #ffffff;
+}
+.footer-grid > div:not(:first-child) span {
+  color: #b0c6e8;
 }
 .footer-title {
-  color: var(--ink);
+  color: #ffffff;
   font-weight: 700;
-  margin-bottom: 5px;
+  font-size: 0.88rem;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
 }
 .footer-bottom {
   display: flex;
   justify-content: space-between;
-  padding-top: 37px;
+  padding-top: 32px;
   margin-top: 40px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.68rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #8da7cd;
+  font-size: 0.72rem;
 }
 .auth-page {
   min-height: 100vh;
