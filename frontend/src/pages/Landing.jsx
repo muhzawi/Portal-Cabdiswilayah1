@@ -143,7 +143,10 @@ function Landing() {
           </p>
         </section>
 
-        <section className="figma-officials" aria-label="Pejabat Sumatera Utara">
+        <section
+          className="figma-officials"
+          aria-label="Pejabat Sumatera Utara"
+        >
           <div className="figma-officials-panel">
             <div className="figma-officials-copy">
               <h2>
@@ -186,10 +189,7 @@ function Landing() {
               <span>Informasi Layanan</span>
               <h2 id="applications-title">Info Layanan Portal</h2>
             </div>
-            <span
-              className="figma-applications-divider"
-              aria-hidden="true"
-            />
+            <span className="figma-applications-divider" aria-hidden="true" />
             <p>
               Akses berbagai layanan aplikasi Dinas Pendidikan Wilayah I
               Sumatera Utara dengan mudah melalui satu portal terpadu.
