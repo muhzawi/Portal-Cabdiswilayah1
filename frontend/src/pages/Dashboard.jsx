@@ -121,7 +121,8 @@ function Dashboard() {
   }, [categorySummaries, selectedCategory]);
 
   const selectedCategoryApps =
-    categorySummaries.find((category) => category.name === selectedCategory)?.apps || [];
+    categorySummaries.find((category) => category.name === selectedCategory)
+      ?.apps || [];
 
   // State Edit Pengguna dengan fitur Save Changes
   const [editingUser, setEditingUser] = useState(null);
@@ -194,14 +195,14 @@ function Dashboard() {
       }
 
       setToastMessage(
-        `Perubahan hak akses dan data untuk "${editingUser.full_name}" berhasil disimpan!`
+        `Perubahan hak akses dan data untuk "${editingUser.full_name}" berhasil disimpan!`,
       );
       await fetchUsers();
       setEditingUser(null);
     } catch (err) {
       alert(
         err.response?.data?.error ||
-          "Gagal menyimpan perubahan pengguna. Silakan coba lagi."
+          "Gagal menyimpan perubahan pengguna. Silakan coba lagi.",
       );
     } finally {
       setIsSavingUser(false);
@@ -224,7 +225,9 @@ function Dashboard() {
   const filteredUsers = useMemo(() => {
     return usersList.filter((u) => {
       const matchesSearch =
-        u.full_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        u.full_name
+          ?.toLowerCase()
+          .includes(debouncedSearchQuery.toLowerCase()) ||
         u.email?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
       const matchesStatus =
         statusFilter === "semua" || u.status === statusFilter;
@@ -239,7 +242,9 @@ function Dashboard() {
       setToastMessage(res.data?.message || "Akun berhasil disetujui!");
       fetchUsers();
       if (selectedUser?.id === id) {
-        setSelectedUser((prev) => (prev ? { ...prev, status: "approved" } : null));
+        setSelectedUser((prev) =>
+          prev ? { ...prev, status: "approved" } : null,
+        );
       }
     } catch (err) {
       alert(err.response?.data?.error || "Gagal menyetujui pengguna.");
@@ -250,7 +255,9 @@ function Dashboard() {
 
   const handleAppAccessChange = async (targetUser, newAccessArray) => {
     if (targetUser.role === "super_user") {
-      alert("Super User secara otomatis memiliki akses penuh ke seluruh aplikasi.");
+      alert(
+        "Super User secara otomatis memiliki akses penuh ke seluruh aplikasi.",
+      );
       return;
     }
 
@@ -265,19 +272,20 @@ function Dashboard() {
         .join(", ");
 
       setToastMessage(
-        `Akses aplikasi untuk ${targetUser.full_name} berhasil diperbarui: ${appNames || "Tanpa Akses"}`
+        `Akses aplikasi untuk ${targetUser.full_name} berhasil diperbarui: ${appNames || "Tanpa Akses"}`,
       );
 
       fetchUsers();
 
       if (selectedUser?.id === targetUser.id) {
         setSelectedUser((prev) =>
-          prev ? { ...prev, app_access: newAccessArray } : null
+          prev ? { ...prev, app_access: newAccessArray } : null,
         );
       }
     } catch (err) {
       alert(
-        err.response?.data?.error || "Gagal memperbarui akses aplikasi pengguna."
+        err.response?.data?.error ||
+          "Gagal memperbarui akses aplikasi pengguna.",
       );
     } finally {
       setActionLoadingId(null);
@@ -299,7 +307,9 @@ function Dashboard() {
     setActionLoadingId(id);
     try {
       const res = await api.delete(`/api/users/${id}`);
-      setToastMessage(res.data?.message || "Akun pengguna berhasil dihapus secara permanen.");
+      setToastMessage(
+        res.data?.message || "Akun pengguna berhasil dihapus secara permanen.",
+      );
       fetchUsers();
       if (selectedUser?.id === id) {
         setSelectedUser(null);
@@ -329,7 +339,9 @@ function Dashboard() {
 
     try {
       const res = await api.delete(`/api/apps/${appToDelete.id}`);
-      setToastMessage(res.data?.message || `Aplikasi ${appToDelete.name} berhasil dihapus.`);
+      setToastMessage(
+        res.data?.message || `Aplikasi ${appToDelete.name} berhasil dihapus.`,
+      );
 
       fetchPublicApps();
       fetchUsers();
@@ -368,7 +380,13 @@ function Dashboard() {
           <CheckCircle2 size={16} /> {toastMessage}
           <button
             onClick={() => setToastMessage("")}
-            style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "inherit" }}
+            style={{
+              marginLeft: "auto",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "inherit",
+            }}
           >
             <X size={14} />
           </button>
@@ -403,32 +421,35 @@ function Dashboard() {
                       <h2>Pilih area kerja Anda</h2>
                     </div>
                     <p className="section-heading-description">
-                      Pilih kategori untuk melihat layanan aplikasi yang tersedia.
+                      Pilih kategori untuk melihat layanan aplikasi yang
+                      tersedia.
                     </p>
                   </div>
                   <div className="category-selector-grid">
-                    {categorySummaries.map(({ name, apps: categoryApps, Icon }) => (
-                      <button
-                        type="button"
-                        key={name}
-                        className="category-card category-card--interactive"
-                        onClick={() => setSelectedCategory(name)}
-                      >
-                        <span className="category-card-icon">
-                          <Icon size={24} />
-                        </span>
-                        <span className="category-card-copy">
-                          <strong>{name}</strong>
-                          <span>{categoryApps.length} aplikasi tersedia</span>
-                          <small>
-                            Layanan untuk kebutuhan {name.toLowerCase()} Anda.
-                          </small>
-                          <span className="category-card-link">
-                            Selengkapnya <ArrowRight size={15} />
+                    {categorySummaries.map(
+                      ({ name, apps: categoryApps, Icon }) => (
+                        <button
+                          type="button"
+                          key={name}
+                          className="category-card category-card--interactive"
+                          onClick={() => setSelectedCategory(name)}
+                        >
+                          <span className="category-card-icon">
+                            <Icon size={24} />
                           </span>
-                        </span>
-                      </button>
-                    ))}
+                          <span className="category-card-copy">
+                            <strong>{name}</strong>
+                            <span>{categoryApps.length} aplikasi tersedia</span>
+                            <small>
+                              Layanan untuk kebutuhan {name.toLowerCase()} Anda.
+                            </small>
+                            <span className="category-card-link">
+                              Selengkapnya <ArrowRight size={15} />
+                            </span>
+                          </span>
+                        </button>
+                      ),
+                    )}
                   </div>
                 </>
               ) : (
@@ -438,8 +459,8 @@ function Dashboard() {
                       <span className="eyebrow">Aplikasi dalam kategori</span>
                       <h2>{selectedCategory}</h2>
                       <p className="category-page-summary">
-                        {selectedCategoryApps.length} aplikasi tersedia untuk kebutuhan{" "}
-                        {selectedCategory.toLowerCase()}.
+                        {selectedCategoryApps.length} aplikasi tersedia untuk
+                        kebutuhan {selectedCategory.toLowerCase()}.
                       </p>
                     </div>
                     <button
@@ -538,12 +559,19 @@ function Dashboard() {
                           </div>
                         </td>
                         <td>
-                          <span className="eyebrow" style={{ fontSize: "0.72rem" }}>
-                            {u.role === "super_user" ? "Super User" : "Medium User"}
+                          <span
+                            className="eyebrow"
+                            style={{ fontSize: "0.72rem" }}
+                          >
+                            {u.role === "super_user"
+                              ? "Super User"
+                              : "Medium User"}
                           </span>
                         </td>
                         <td>
-                          <span className={`status-badge-pill ${u.status || "approved"}`}>
+                          <span
+                            className={`status-badge-pill ${u.status || "approved"}`}
+                          >
                             {u.status === "pending"
                               ? "Pending"
                               : u.status === "rejected"
@@ -553,15 +581,22 @@ function Dashboard() {
                         </td>
                         <td>
                           {u.role === "super_user" ? (
-                            <span className="pill-all-access">Semua Aplikasi</span>
+                            <span className="pill-all-access">
+                              Semua Aplikasi
+                            </span>
                           ) : (
                             <div className="app-pill-summary-list">
                               {(u.app_access || []).length > 0 ? (
                                 <>
                                   {u.app_access.slice(0, 3).map((appId) => {
-                                    const app = availableApps.find((a) => a.id === appId);
+                                    const app = availableApps.find(
+                                      (a) => a.id === appId,
+                                    );
                                     return (
-                                      <span key={appId} className="app-pill-tag">
+                                      <span
+                                        key={appId}
+                                        className="app-pill-tag"
+                                      >
                                         {app?.name || appId}
                                       </span>
                                     );
@@ -573,7 +608,13 @@ function Dashboard() {
                                   )}
                                 </>
                               ) : (
-                                <span style={{ color: "var(--muted)", fontSize: "0.78rem", fontStyle: "italic" }}>
+                                <span
+                                  style={{
+                                    color: "var(--muted)",
+                                    fontSize: "0.78rem",
+                                    fontStyle: "italic",
+                                  }}
+                                >
                                   Belum ada akses
                                 </span>
                               )}
@@ -582,11 +623,14 @@ function Dashboard() {
                         </td>
                         <td>
                           {u.created_at
-                            ? new Date(u.created_at).toLocaleDateString("id-ID", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })
+                            ? new Date(u.created_at).toLocaleDateString(
+                                "id-ID",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                },
+                              )
                             : "-"}
                         </td>
                         <td>
@@ -638,7 +682,9 @@ function Dashboard() {
           ) : (
             <div className="inline-empty">
               <AlertCircle size={22} />
-              <span>Tidak ada pengguna yang cocok dengan pencarian / filter.</span>
+              <span>
+                Tidak ada pengguna yang cocok dengan pencarian / filter.
+              </span>
             </div>
           )}
         </div>
@@ -689,7 +735,9 @@ function Dashboard() {
               <div className="detail-row" style={{ alignItems: "start" }}>
                 <label>Akses Aplikasi</label>
                 {selectedUser.role === "super_user" ? (
-                  <span className="pill-all-access">Semua Aplikasi (Akses Penuh)</span>
+                  <span className="pill-all-access">
+                    Semua Aplikasi (Akses Penuh)
+                  </span>
                 ) : (
                   <div className="app-pill-summary-list">
                     {(selectedUser.app_access || []).length > 0 ? (
@@ -702,7 +750,9 @@ function Dashboard() {
                         );
                       })
                     ) : (
-                      <span style={{ color: "var(--muted)", fontSize: "0.82rem" }}>
+                      <span
+                        style={{ color: "var(--muted)", fontSize: "0.82rem" }}
+                      >
                         Belum ada akses aplikasi yang diberikan
                       </span>
                     )}
@@ -718,7 +768,14 @@ function Dashboard() {
                 </span>
               </div>
             </div>
-            <div className="action-buttons" style={{ justifyContent: "flex-end", marginTop: "16px", gap: "10px" }}>
+            <div
+              className="action-buttons"
+              style={{
+                justifyContent: "flex-end",
+                marginTop: "16px",
+                gap: "10px",
+              }}
+            >
               <button
                 className="btn-edit-user"
                 style={{ padding: "8px 14px", fontSize: "0.82rem" }}
@@ -743,7 +800,9 @@ function Dashboard() {
                 <button
                   className="btn-reject"
                   disabled={actionLoadingId === selectedUser.id}
-                  onClick={() => handleDelete(selectedUser.id, selectedUser.full_name)}
+                  onClick={() =>
+                    handleDelete(selectedUser.id, selectedUser.full_name)
+                  }
                 >
                   <Trash2 size={14} /> Hapus Akun
                 </button>
@@ -755,12 +814,24 @@ function Dashboard() {
 
       {/* MODAL EDIT PENGGUNA (DENGAN FITUR SAVE CHANGES) */}
       {editingUser && (
-        <div className="modal-overlay" onClick={() => !isSavingUser && setEditingUser(null)}>
-          <div className="modal-card edit-user-modal-card" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={() => !isSavingUser && setEditingUser(null)}
+        >
+          <div
+            className="modal-card edit-user-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <div>
                 <h3>Edit Pengguna & Hak Akses</h3>
-                <p style={{ margin: "4px 0 0", fontSize: "0.82rem", color: "var(--muted)" }}>
+                <p
+                  style={{
+                    margin: "4px 0 0",
+                    fontSize: "0.82rem",
+                    color: "var(--muted)",
+                  }}
+                >
                   {editingUser.full_name} &bull; {editingUser.email}
                 </p>
               </div>
@@ -780,7 +851,9 @@ function Dashboard() {
                 <div className="role-radio-group">
                   <div
                     className={`role-radio-option ${editForm.role === "medium_user" ? "selected" : ""}`}
-                    onClick={() => setEditForm((prev) => ({ ...prev, role: "medium_user" }))}
+                    onClick={() =>
+                      setEditForm((prev) => ({ ...prev, role: "medium_user" }))
+                    }
                   >
                     <input
                       type="radio"
@@ -790,7 +863,9 @@ function Dashboard() {
                     />
                     <div>
                       <strong>Medium User</strong>
-                      <div style={{ fontSize: "0.74rem", color: "var(--muted)" }}>
+                      <div
+                        style={{ fontSize: "0.74rem", color: "var(--muted)" }}
+                      >
                         Akses dibatasi sesuai aplikasi yang dicentang
                       </div>
                     </div>
@@ -798,7 +873,9 @@ function Dashboard() {
 
                   <div
                     className={`role-radio-option ${editForm.role === "super_user" ? "selected" : ""}`}
-                    onClick={() => setEditForm((prev) => ({ ...prev, role: "super_user" }))}
+                    onClick={() =>
+                      setEditForm((prev) => ({ ...prev, role: "super_user" }))
+                    }
                   >
                     <input
                       type="radio"
@@ -808,7 +885,9 @@ function Dashboard() {
                     />
                     <div>
                       <strong>Super User</strong>
-                      <div style={{ fontSize: "0.74rem", color: "var(--muted)" }}>
+                      <div
+                        style={{ fontSize: "0.74rem", color: "var(--muted)" }}
+                      >
                         Akses penuh ke semua aplikasi & hak kelola
                       </div>
                     </div>
@@ -821,7 +900,9 @@ function Dashboard() {
                 <label>Status Akun</label>
                 <select
                   value={editForm.status}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({ ...prev, status: e.target.value }))
+                  }
                   style={{
                     padding: "9px 12px",
                     borderRadius: "8px",
@@ -833,7 +914,9 @@ function Dashboard() {
                   }}
                 >
                   <option value="approved">Approved (Disetujui & Aktif)</option>
-                  <option value="pending">Pending (Menunggu Persetujuan)</option>
+                  <option value="pending">
+                    Pending (Menunggu Persetujuan)
+                  </option>
                   <option value="rejected">Rejected (Ditolak)</option>
                 </select>
               </div>
@@ -856,14 +939,16 @@ function Dashboard() {
                   >
                     <CheckCircle2 size={16} color="var(--green-700)" />
                     <span>
-                      <strong>Super User</strong> secara otomatis memiliki izin akses ke seluruh aplikasi portal.
+                      <strong>Super User</strong> secara otomatis memiliki izin
+                      akses ke seluruh aplikasi portal.
                     </span>
                   </div>
                 ) : (
                   <>
                     <div className="app-selection-header">
                       <label style={{ margin: 0 }}>
-                        Aplikasi yang Diizinkan ({editForm.appAccess.length} dipilih)
+                        Aplikasi yang Diizinkan ({editForm.appAccess.length}{" "}
+                        dipilih)
                       </label>
                       <div className="app-selection-actions">
                         <button
@@ -897,9 +982,19 @@ function Dashboard() {
                               checked={isChecked}
                               onChange={() => handleToggleAppInEdit(app.id)}
                             />
-                            <div style={{ display: "flex", flexDirection: "column" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                              }}
+                            >
                               <strong>{app.name}</strong>
-                              <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>
+                              <span
+                                style={{
+                                  fontSize: "0.72rem",
+                                  color: "var(--muted)",
+                                }}
+                              >
                                 {app.category || "Umum"}
                               </span>
                             </div>

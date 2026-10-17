@@ -17,9 +17,9 @@ function Footer() {
         </div>
         <div>
           <span className="footer-title">Navigasi Portal</span>
+          <a href="#section-hero">Beranda</a>
+          <a href="#section-application">Layanan</a>
           <Link to="/login">Masuk ke Portal</Link>
-          <a href="#cara-kerja">Cara Kerja</a>
-          <a href="#aplikasi">Layanan & Aplikasi</a>
         </div>
         <div>
           <span className="footer-title">Kontak & Informasi</span>

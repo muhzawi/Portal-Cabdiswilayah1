@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { ArrowRight } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PublicNav from "../components/PublicNav";
 import Footer from "../components/Footer";
@@ -7,10 +7,37 @@ import { publicApps, getAppIcon } from "../constants";
 import api from "../api";
 import { useApp } from "../context/AppContext";
 
+const categoryOrder = ["Pendidikan", "Administrasi", "Kepegawaian"];
+
+const officials = [
+  {
+    name: "Muhammad Bobby Afif Nasution, S.E., M.M",
+    title: "Gubernur Sumatera Utara",
+    image: "/bobby.webp",
+    imageAlt: "Gubernur Sumatera Utara Muhammad Bobby Afif Nasution",
+  },
+  {
+    name: "H. Surya, Bsc",
+    title: "Wakil Gubernur Sumatera Utara",
+    image: "/surya.webp",
+    imageAlt: "Wakil Gubernur Sumatera Utara H. Surya",
+  },
+  {
+    name: "Alexander Sinulingga, S.STP., M.Si",
+    title: "Kepala Dinas Pendidikan Wilayah I Sumut",
+    image: "/kadis.webp",
+    imageAlt: "Kepala Dinas Pendidikan Wilayah I Sumatera Utara",
+    isCompact: true,
+  },
+];
+
 function Landing() {
   const { user } = useApp() || {};
   const navigate = useNavigate();
   const [apps, setApps] = useState(publicApps);
+  const [canScrollBack, setCanScrollBack] = useState(false);
+  const [canScrollForward, setCanScrollForward] = useState(false);
+  const carouselRef = useRef(null);
 
   useEffect(() => {
     api
@@ -26,140 +53,208 @@ function Landing() {
   }, []);
 
   const groupedApps = useMemo(() => {
-    const groups = {};
+    const groups = new Map();
     apps.forEach((app) => {
-      const cat = app.category || "Lainnya";
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(app);
+      const category = app.category || "Lainnya";
+      if (!groups.has(category)) groups.set(category, []);
+      groups.get(category).push(app);
     });
-    return groups;
+
+    return [...groups.entries()].sort(([first], [second]) => {
+      const firstIndex = categoryOrder.indexOf(first);
+      const secondIndex = categoryOrder.indexOf(second);
+      if (firstIndex === -1 && secondIndex === -1) {
+        return first.localeCompare(second);
+      }
+      if (firstIndex === -1) return 1;
+      if (secondIndex === -1) return -1;
+      return firstIndex - secondIndex;
+    });
   }, [apps]);
 
+  useEffect(() => {
+    const viewport = carouselRef.current;
+    if (!viewport) return undefined;
+
+    const updateScrollButtons = () => {
+      const maxScrollLeft = viewport.scrollWidth - viewport.clientWidth;
+      setCanScrollBack(viewport.scrollLeft > 2);
+      setCanScrollForward(maxScrollLeft - viewport.scrollLeft > 2);
+    };
+
+    updateScrollButtons();
+    const resizeObserver = new ResizeObserver(updateScrollButtons);
+    resizeObserver.observe(viewport);
+    viewport.addEventListener("scroll", updateScrollButtons, { passive: true });
+
+    return () => {
+      resizeObserver.disconnect();
+      viewport.removeEventListener("scroll", updateScrollButtons);
+    };
+  }, [groupedApps]);
+
+  const scrollCarousel = (direction) => {
+    const viewport = carouselRef.current;
+    if (!viewport) return;
+    viewport.scrollBy({
+      left: direction * viewport.clientWidth * 0.8,
+      behavior: "smooth",
+    });
+  };
+
+  const openPortal = () => navigate(user ? "/dashboard" : "/login");
+
   return (
-    <div className="landing">
+    <div className="landing landing-figma">
       <PublicNav />
       <main>
-        <section className="hero hero--officials container">
-          {/* 1. Teks Tengah */}
-          <div className="hero-copy hero-copy--centered">
-            <h1>
-              Satu Portal untuk <em>semua layanan</em> pendidikan.
+        <section
+          className="figma-hero"
+          id="section-hero"
+          aria-labelledby="hero-title"
+        >
+          <div className="figma-hero-copy">
+            <p className="figma-hero-eyebrow">Portal Resmi</p>
+            <h1 id="hero-title">
+              <span className="figma-hero-title-white">Selamat Datang</span>
+              <span>di Portal Disdik</span>
+              <span>Wilayah I Sumut</span>
             </h1>
-            <p>
-              Portal terpusat Cabang Dinas Pendidikan Wilayah I Sumatera Utara
-              untuk menemukan dan mengakses aplikasi kerja dengan lebih mudah.
+            <p className="figma-hero-description">
+              Bersama mewujudkan pendidikan yang berkualitas, inklusif, dan
+              berdaya saing untuk generasi muda Sumatera Utara
             </p>
+            <button
+              type="button"
+              className="figma-hero-cta"
+              onClick={openPortal}
+            >
+              Masuk Portal <ArrowRight size={22} aria-hidden="true" />
+            </button>
           </div>
-
-          {/* 2. Foto Pejabat — Gubernur & Wakil lebih besar, Kepala Dinas lebih kecil */}
-          <div className="hero-photos-row">
-            {/* Grup utama: Gubernur & Wakil */}
-            <div className="hero-photos-main">
-              <div className="hero-official-photo hero-official-photo--large">
-                <img
-                  src="/pejabat/1.webp"
-                  alt="Gubernur dan Wakil Gubernur Sumatera Utara"
-                  className="hero-official-img hero-official-img--large"
-                />
-              </div>
-            </div>
-
-            {/* Foto terpisah: Kepala Dinas */}
-            <div className="hero-photos-secondary">
-              <div className="hero-official-photo hero-official-photo--small">
-                <img
-                  src="/pejabat/2.webp"
-                  alt="Kepala Dinas Pendidikan Provinsi Sumatera Utara"
-                  className="hero-official-img hero-official-img--small"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* <div className="hero-actions hero-actions--centered">
-            <a href="/login" className="button button-primary">
-              Masuk ke Portal <ArrowRight size={16} />
-            </a>
-          </div> */}
+          <p className="figma-hero-motto">
+            Pendidikan
+            <br />
+            Hari Ini,
+            <br />
+            Masa Depan
+            <br />
+            Sumut Esok
+          </p>
         </section>
 
-        <section className="steps section container" id="cara-kerja">
-          <div className="section-heading centered">
-            <span className="eyebrow">Cara kerja</span>
-            <h2>Mulai bekerja dalam tiga langkah.</h2>
-            <p>Semua yang Anda butuhkan dalam satu pintu.</p>
-          </div>
-          <div className="step-grid">
-            {[
-              [
-                "01",
-                "Masuk",
-                "Gunakan akun Anda untuk masuk ke portal dengan aman.",
-              ],
-              ["02", "Temukan aplikasi", "Cari aplikasi yang Anda perlukan."],
-              [
-                "03",
-                "Mulai bekerja",
-                "Buka layanan dan lanjutkan pekerjaan Anda dengan cepat.",
-              ],
-            ].map(([number, title, text]) => (
-              <div className="step" key={number}>
-                <span className="step-number">{number}</span>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </div>
+        <section
+          className="figma-officials"
+          aria-label="Pejabat Sumatera Utara"
+        >
+          <div className="figma-officials-panel">
+            <div className="figma-officials-copy">
+              <h2>
+                <span>Bersama</span> Mewujudkan Pendidikan Unggul di Sumatera
+                Utara
+              </h2>
+              <p>
+                Sinergi pemerintah Provinsi dan Dinas Pendidikan Wilayah I Sumut
+                untuk mencetak generasi muda yang cerdas, berkarakter, dan
+                berdaya saing global.
+              </p>
+            </div>
+            {officials.map((official) => (
+              <article
+                className={`figma-official-card${official.isCompact ? " figma-official-card-compact" : ""}`}
+                key={official.name}
+              >
+                <img
+                  src={official.image}
+                  alt={official.imageAlt}
+                  loading="lazy"
+                />
+                <div className="figma-official-details">
+                  <h3>{official.name}</h3>
+                  <p>{official.title}</p>
+                </div>
+              </article>
             ))}
           </div>
         </section>
-        <section className="featured section container" id="aplikasi">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">Kategori layanan</span>
-              <h2>Temukan layanan berdasarkan kebutuhan.</h2>
+
+        <section
+          className="figma-applications"
+          id="section-application"
+          aria-labelledby="applications-title"
+        >
+          <div className="figma-applications-heading">
+            <span className="figma-applications-accent" aria-hidden="true" />
+            <div className="figma-applications-title" id="cara-kerja">
+              <span>Informasi Layanan</span>
+              <h2 id="applications-title">Info Layanan Portal</h2>
             </div>
-            <p className="section-heading-description">
-              Jelajahi portal berdasarkan area kerja Anda. Masuk untuk membuka
-              aplikasi di dalam setiap kategori.
+            <span className="figma-applications-divider" aria-hidden="true" />
+            <p>
+              Akses berbagai layanan aplikasi Dinas Pendidikan Wilayah I
+              Sumatera Utara dengan mudah melalui satu portal terpadu.
             </p>
           </div>
-          <div className="category-showcase-grid">
-            {Object.entries(groupedApps).map(([catName, catApps]) => {
-              const Icon = getAppIcon(catName);
-              return (
-                <article
-                  className="category-card category-card--showcase"
-                  key={catName}
-                >
-                  <div className="category-card-icon">
-                    <Icon size={25} />
-                  </div>
-                  <div>
-                    <span className="category-count">
-                      {catApps.length} aplikasi tersedia
-                    </span>
-                    <h3>{catName}</h3>
-                    <p>
-                      Layanan terkurasi untuk mendukung pekerjaan di bidang{" "}
-                      {catName.toLowerCase()}.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="category-card-note"
-                    onClick={() => navigate(user ? "/dashboard" : "/login")}
-                    aria-label={
-                      user ? "Buka dashboard" : "Masuk untuk membuka layanan"
-                    }
-                    title={
-                      user ? "Buka dashboard" : "Masuk untuk membuka layanan"
-                    }
-                  >
-                    <span>Selengkapnya</span>
-                    <ArrowRight size={17} />
-                  </button>
-                </article>
-              );
-            })}
+
+          <div
+            className="figma-carousel-viewport"
+            ref={carouselRef}
+            role="region"
+            aria-roledescription="carousel"
+            aria-label="Kategori layanan aplikasi"
+          >
+            <div className="figma-carousel-track">
+              {groupedApps.map(([category, categoryApps]) => {
+                const Icon = getAppIcon(category);
+                return (
+                  <article className="figma-app-card" key={category}>
+                    <div className="figma-app-card-summary">
+                      <div className="figma-app-icon">
+                        <Icon size={66} strokeWidth={1.8} aria-hidden="true" />
+                      </div>
+                      <span className="figma-app-count">
+                        {categoryApps.length} aplikasi tersedia
+                      </span>
+                    </div>
+                    <div className="figma-app-card-details">
+                      <div>
+                        <h3>{category}</h3>
+                        <p>
+                          Layanan terkurasi untuk mendukung pekerjaan di bidang{" "}
+                          {category.toLowerCase()}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="figma-app-card-cta"
+                        onClick={openPortal}
+                        aria-label={`Selengkapnya: layanan ${category}`}
+                      >
+                        Selengkapnya <ArrowRight size={20} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+          <div className="figma-carousel-controls">
+            <button
+              type="button"
+              onClick={() => scrollCarousel(-1)}
+              disabled={!canScrollBack}
+              aria-label="Geser ke kategori sebelumnya"
+            >
+              <ChevronLeft size={20} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollCarousel(1)}
+              disabled={!canScrollForward}
+              aria-label="Geser ke kategori berikutnya"
+            >
+              <ChevronRight size={20} aria-hidden="true" />
+            </button>
           </div>
         </section>
       </main>
