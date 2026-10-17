@@ -108,7 +108,11 @@ function Landing() {
     <div className="landing landing-figma">
       <PublicNav />
       <main>
-        <section className="figma-hero" aria-labelledby="hero-title">
+        <section
+          className="figma-hero"
+          id="section-hero"
+          aria-labelledby="hero-title"
+        >
           <div className="figma-hero-copy">
             <p className="figma-hero-eyebrow">Portal Resmi</p>
             <h1 id="hero-title">
@@ -173,7 +177,7 @@ function Landing() {
 
         <section
           className="figma-applications"
-          id="aplikasi"
+          id="section-application"
           aria-labelledby="applications-title"
         >
           <div className="figma-applications-heading">
@@ -190,24 +194,6 @@ function Landing() {
               Akses berbagai layanan aplikasi Dinas Pendidikan Wilayah I
               Sumatera Utara dengan mudah melalui satu portal terpadu.
             </p>
-            <div className="figma-carousel-controls">
-              <button
-                type="button"
-                onClick={() => scrollCarousel(-1)}
-                disabled={!canScrollBack}
-                aria-label="Geser ke kategori sebelumnya"
-              >
-                <ChevronLeft size={20} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollCarousel(1)}
-                disabled={!canScrollForward}
-                aria-label="Geser ke kategori berikutnya"
-              >
-                <ChevronRight size={20} aria-hidden="true" />
-              </button>
-            </div>
           </div>
 
           <div
@@ -251,6 +237,24 @@ function Landing() {
                 );
               })}
             </div>
+          </div>
+          <div className="figma-carousel-controls">
+            <button
+              type="button"
+              onClick={() => scrollCarousel(-1)}
+              disabled={!canScrollBack}
+              aria-label="Geser ke kategori sebelumnya"
+            >
+              <ChevronLeft size={20} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollCarousel(1)}
+              disabled={!canScrollForward}
+              aria-label="Geser ke kategori berikutnya"
+            >
+              <ChevronRight size={20} aria-hidden="true" />
+            </button>
           </div>
         </section>
       </main>

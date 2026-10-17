@@ -26,9 +26,13 @@ function PublicNav() {
             alt="Kolaborasi Sumut Berkah"
           />
         </Link>
+        <nav className="figma-nav-menu" aria-label="Navigasi utama">
+          <a href="#section-hero">Beranda</a>
+          <a href="#section-application">Layanan</a>
+        </nav>
         <Link className="figma-nav-cta" to="/login">
-          <ArrowRight size={17} aria-hidden="true" />
           <span>Masuk Portal</span>
+          <ArrowRight size={17} aria-hidden="true" />
         </Link>
       </div>
     </header>

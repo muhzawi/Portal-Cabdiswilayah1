@@ -13,7 +13,9 @@ function AppCard({ app, showFavorite = true, onDelete, onEdit, directLink = fals
   const isDisabled = user ? app.status !== "available" : false;
 
   return (
-    <article className="app-card">
+    <article
+      className={`app-card ${app.status === "available" ? "is-available" : ""}`}
+    >
       <div className="app-card-top">
         <div className="app-icon">
           {app.icon_url ? (

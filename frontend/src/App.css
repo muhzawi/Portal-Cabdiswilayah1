@@ -7,6 +7,14 @@
   --primary-100: #e3ecfc;
   --primary-50: #f0f5ff;
 
+  --green-900: var(--primary-900);
+  --green-800: var(--primary-800);
+  --green-700: var(--primary-700);
+  --green-600: var(--primary-600);
+  --green-200: #c7d9f8;
+  --green-100: var(--primary-100);
+  --green-50: var(--primary-50);
+
   --yellow: #eab308;
   --ink: #121b2d;
   --muted: #5b6b84;
@@ -64,7 +72,8 @@ p {
     background-color 0.2s,
     box-shadow 0.2s;
 }
-#aplikasi {
+.figma-hero,
+#section-application {
   scroll-margin-top: 100px;
 }
 .public-nav {
@@ -218,12 +227,12 @@ p {
   transition: 0.2s;
 }
 .button-primary {
-  background: var(--green-700);
-  color: #fff;
+  background: var(--primary);
+  color: #ffffff;
   box-shadow: 0 8px 18px rgba(36, 107, 71, 0.16);
 }
 .button-primary:hover {
-  background: var(--green-900);
+  background: var(--primary-900);
   transform: translateY(-1px);
 }
 .button-secondary {
@@ -802,6 +811,10 @@ em {
   box-shadow: var(--shadow);
   transform: translateY(-2px);
 }
+.app-card.is-available:hover {
+  border-color: #16a34a;
+  box-shadow: 0 12px 28px rgba(22, 163, 74, 0.14);
+}
 .app-card-top {
   display: flex;
   align-items: center;
@@ -899,6 +912,9 @@ em {
   height: 6px;
   border-radius: 50%;
   background: currentColor;
+}
+.status-available {
+  color: #15803d;
 }
 .status-maintenance {
   color: #bd8400;
@@ -3226,12 +3242,32 @@ em {
   display: block;
   flex: 0 1 177px;
   width: 177px;
-  height: 68px;
+  height: 200px;
   object-fit: contain;
 }
 
 .figma-brand-berkah {
   margin-left: 0;
+}
+
+.figma-nav-menu {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 28px;
+  margin-left: auto;
+}
+
+.figma-nav-menu a {
+  color: #082a68;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.figma-nav-menu a:hover {
+  color: #005ddb;
 }
 
 .figma-nav-cta {
@@ -3242,6 +3278,7 @@ em {
   align-items: center;
   justify-content: center;
   gap: 12px;
+  margin-left: 20px;
   border-radius: 999px;
   background: #005ddb;
   color: #fff;
@@ -3514,6 +3551,7 @@ em {
 .figma-carousel-controls {
   display: flex;
   flex: 0 0 auto;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -3730,6 +3768,14 @@ em {
     font-size: 12px;
   }
 
+  .figma-nav-menu {
+    gap: 18px;
+  }
+
+  .figma-nav-cta {
+    margin-left: 12px;
+  }
+
   .figma-hero {
     min-height: 480px;
     padding: 42px 48px 36px;
@@ -3800,11 +3846,15 @@ em {
 
 @media (max-width: 700px) {
   .figma-nav {
-    height: 68px;
+    height: auto;
+    min-height: 92px;
   }
 
   .figma-nav-inner {
-    gap: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 48px 28px;
+    gap: 2px 8px;
     padding-right: 16px;
     padding-left: 16px;
   }
@@ -3829,10 +3879,22 @@ em {
     height: 36px;
   }
 
+  .figma-nav-menu {
+    gap: 10px;
+    grid-column: 1 / -1;
+    justify-content: center;
+    margin-left: 0;
+  }
+
+  .figma-nav-menu a {
+    font-size: 11px;
+  }
+
   .figma-nav-cta {
     min-width: 104px;
     height: 38px;
     gap: 6px;
+    margin-left: 0;
     font-size: 10px;
   }
 
@@ -3954,8 +4016,7 @@ em {
   }
 
   .figma-carousel-controls {
-    grid-column: 3;
-    grid-row: 1;
+    align-self: center;
   }
 
   .figma-carousel-controls button {
@@ -4007,6 +4068,14 @@ em {
 
   .figma-brand-secondary {
     width: 32px;
+  }
+
+  .figma-nav-menu {
+    gap: 6px;
+  }
+
+  .figma-nav-menu a {
+    font-size: 9px;
   }
 
   .figma-nav-cta {
