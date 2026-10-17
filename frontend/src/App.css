@@ -3933,6 +3933,7 @@ em {
     padding: 12px 4px;
     border-bottom: 1px solid #edf1f7;
     font-size: 14px;
+    text-align: center;
   }
 
   .figma-nav-cta {
