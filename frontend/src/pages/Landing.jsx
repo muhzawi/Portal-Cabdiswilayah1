@@ -116,9 +116,9 @@ function Landing() {
           <div className="figma-hero-copy">
             <p className="figma-hero-eyebrow">Portal Resmi</p>
             <h1 id="hero-title">
-              <span className="figma-hero-title-white">Selamat Datang</span>
-              <span>di Portal Disdik</span>
-              <span>Wilayah I Sumut</span>
+              <span>Cabang Dinas</span>
+              <span>Pendidikan Wilayah I</span>
+              <span> Sumatera Utara</span>
             </h1>
             <p className="figma-hero-description">
               Bersama mewujudkan pendidikan yang berkualitas, inklusif, dan
