@@ -24,9 +24,9 @@ const officials = [
   },
   {
     name: "Alexander Sinulingga, S.STP., M.Si",
-    title: "Kepala Dinas Pendidikan Wilayah I Sumut",
+    title: "Kepala Dinas Pendidikan Sumatera Utara",
     image: "/kadis.webp",
-    imageAlt: "Kepala Dinas Pendidikan Wilayah I Sumatera Utara",
+    imageAlt: "Kepala Dinas Pendidikan Sumatera Utara",
     isCompact: true,
   },
 ];
