@@ -1,30 +1,48 @@
 import React, { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ArrowRight, X, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import {
+  ArrowRight,
+  X,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  UserCheck,
+  Info,
+} from "lucide-react";
 import { useApp } from "../context/AppContext";
 import Logo from "../components/ui/Logo";
 import Button from "../components/ui/Button";
 import api from "../api";
 
 function Login() {
-  const { user, login } = useApp();
+  const { user, login, loginSchool } = useApp();
   const navigate = useNavigate();
 
+  // Tab mode login: 'school' (default) atau 'admin'
+  const [loginMode, setLoginMode] = useState("school");
+
+  // State Login Sekolah
+  const [npsn, setNpsn] = useState("");
+  const [schoolPassword, setSchoolPassword] = useState("");
+  const [showSchoolPassword, setShowSchoolPassword] = useState(false);
+
+  // State Login Admin / Pegawai
   const [rememberMe, setRememberMe] = useState(() => {
     return localStorage.getItem("portal_remember_me") === "true";
   });
-
   const [email, setEmail] = useState(() => {
     const savedEmail = localStorage.getItem("portal_saved_email");
     return savedEmail || "";
   });
+  const [adminPassword, setAdminPassword] = useState("");
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  // General state
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Forgot password modal state
+  // Forgot password modal state (untuk admin)
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -33,13 +51,38 @@ function Login() {
 
   if (user) return <Navigate to="/dashboard" replace />;
 
-  const submit = async (event) => {
+  const handleSchoolSubmit = async (event) => {
     event.preventDefault();
-    if (!email || !password) return setError("Email dan password wajib diisi.");
+    const cleanNpsn = npsn.trim();
+    if (!cleanNpsn || !schoolPassword) {
+      return setError("NPSN dan password wajib diisi.");
+    }
+    if (!/^\d{8}$/.test(cleanNpsn)) {
+      return setError("NPSN harus berupa 8 digit angka.");
+    }
+
     setIsLoading(true);
     setError("");
-    const result = await login(email, password);
+    const result = await loginSchool(cleanNpsn, schoolPassword);
     setIsLoading(false);
+
+    if (result.success) {
+      navigate("/dashboard");
+    } else {
+      setError(result.error);
+    }
+  };
+
+  const handleAdminSubmit = async (event) => {
+    event.preventDefault();
+    if (!email || !adminPassword) {
+      return setError("Email dan password wajib diisi.");
+    }
+    setIsLoading(true);
+    setError("");
+    const result = await login(email, adminPassword);
+    setIsLoading(false);
+
     if (result.success) {
       if (rememberMe) {
         localStorage.setItem("portal_saved_email", email);
@@ -120,71 +163,175 @@ function Login() {
           <span className="eyebrow">Selamat datang kembali</span>
           <h2>Masuk ke portal</h2>
           <p className="form-intro">
-            Gunakan akun organisasi Anda untuk melanjutkan.
+            Pilih metode login sesuai jenis akun Anda.
           </p>
-          <form onSubmit={submit}>
-            <label>
-              Email
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder=""
-              />
-            </label>
-            <label>
-              Password
-              <div className="password-input-wrapper">
+
+          {/* Tab Pilihan Login */}
+          <div className="auth-type-tabs">
+            <button
+              type="button"
+              className={`auth-type-tab ${loginMode === "school" ? "active" : ""}`}
+              onClick={() => {
+                setLoginMode("school");
+                setError("");
+              }}
+            >
+              <GraduationCap size={18} />
+              <span>Sekolah (NPSN)</span>
+            </button>
+            <button
+              type="button"
+              className={`auth-type-tab ${loginMode === "admin" ? "active" : ""}`}
+              onClick={() => {
+                setLoginMode("admin");
+                setError("");
+              }}
+            >
+              <UserCheck size={18} />
+              <span>Admin / Pegawai</span>
+            </button>
+          </div>
+
+          {/* FORM LOGIN SEKOLAH (NPSN) */}
+          {loginMode === "school" && (
+            <form onSubmit={handleSchoolSubmit}>
+              <div className="auth-info-box">
+                <Info size={18} style={{ flexShrink: 0, marginTop: 2 }} />
+                <span>
+                  Akun sekolah didaftarkan oleh Super Admin Cabang Dinas. Gunakan 8 digit NPSN dan password yang telah diberikan.
+                </span>
+              </div>
+
+              <label>
+                NPSN Sekolah (8 Digit)
                 <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder=""
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={8}
+                  value={npsn}
+                  onChange={(e) => setNpsn(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="Contoh: 10261234"
+                  autoFocus
                   required
                 />
-                <button
-                  type="button"
-                  className="password-toggle-btn"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </label>
-            <div className="form-row">
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />{" "}
-                Ingat saya
               </label>
-              <a href="#forgot" onClick={openForgotModal}>
-                Lupa password?
-              </a>
-            </div>
-            {error && <div className="form-error">{error}</div>}
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
-                "Memuat..."
-              ) : (
-                <>
-                  Masuk ke portal <ArrowRight size={17} />
-                </>
-              )}
-            </Button>
-          </form>
-          <p className="auth-note">
-            Belum memiliki akun?{" "}
-            <Link to="/register" style={{ color: "var(--green-700)", fontWeight: 600 }}>
-              Daftar sekarang
-            </Link>
-          </p>
+
+              <label>
+                Password
+                <div className="password-input-wrapper">
+                  <input
+                    type={showSchoolPassword ? "text" : "password"}
+                    value={schoolPassword}
+                    onChange={(e) => setSchoolPassword(e.target.value)}
+                    placeholder="Masukkan password sekolah"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowSchoolPassword(!showSchoolPassword)}
+                    aria-label={showSchoolPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  >
+                    {showSchoolPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </label>
+
+              {error && <div className="form-error">{error}</div>}
+
+              <Button type="submit" disabled={isLoading} style={{ marginTop: "8px" }}>
+                {isLoading ? (
+                  "Memeriksa..."
+                ) : (
+                  <>
+                    Masuk sebagai Sekolah <ArrowRight size={17} />
+                  </>
+                )}
+              </Button>
+
+              <p className="auth-note" style={{ marginTop: "16px", fontSize: "0.82rem" }}>
+                Lupa password atau belum terdaftar?{" "}
+                <span style={{ color: "var(--muted)", fontWeight: 500 }}>
+                  Silakan hubungi administrator Cabang Dinas Wilayah 1.
+                </span>
+              </p>
+            </form>
+          )}
+
+          {/* FORM LOGIN ADMIN / PEGAWAI (EMAIL) */}
+          {loginMode === "admin" && (
+            <form onSubmit={handleAdminSubmit}>
+              <label>
+                Email Pegawai / Admin
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nama@cabdis.sumutprov.go.id"
+                  autoFocus
+                  required
+                />
+              </label>
+
+              <label>
+                Password
+                <div className="password-input-wrapper">
+                  <input
+                    type={showAdminPassword ? "text" : "password"}
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="Masukkan password Anda"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowAdminPassword(!showAdminPassword)}
+                    aria-label={showAdminPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  >
+                    {showAdminPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </label>
+
+              <div className="form-row">
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />{" "}
+                  Ingat saya
+                </label>
+                <a href="#forgot" onClick={openForgotModal}>
+                  Lupa password?
+                </a>
+              </div>
+
+              {error && <div className="form-error">{error}</div>}
+
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  "Memuat..."
+                ) : (
+                  <>
+                    Masuk ke portal <ArrowRight size={17} />
+                  </>
+                )}
+              </Button>
+
+              <p className="auth-note">
+                Belum memiliki akun pegawai?{" "}
+                <Link to="/register" style={{ color: "var(--green-700)", fontWeight: 600 }}>
+                  Daftar sekarang
+                </Link>
+              </p>
+            </form>
+          )}
         </div>
       </main>
 
+      {/* Modal Lupa Password (Admin) */}
       {showForgotModal && (
         <div className="modal-overlay" onClick={closeForgotModal}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
