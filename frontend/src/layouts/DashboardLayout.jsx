@@ -1,6 +1,20 @@
 import React, { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Bell, ChevronDown, Grid2X2, Heart, Home, LogOut, Menu, Search, Settings, Star, Users, X } from "lucide-react";
+import {
+  Bell,
+  ChevronDown,
+  GraduationCap,
+  Grid2X2,
+  Heart,
+  Home,
+  LogOut,
+  Menu,
+  Search,
+  Settings,
+  Star,
+  Users,
+  X,
+} from "lucide-react";
 import { useApp } from "../context/AppContext";
 import Logo from "../components/ui/Logo";
 
@@ -13,7 +27,10 @@ function DashboardLayout({ children }) {
   const nav = [
     ["/dashboard", "Dashboard", Home],
     ...(user?.role === "super_user"
-      ? [["/dashboard?tab=monitoring", "Monitoring Pengguna", Users]]
+      ? [
+          ["/dashboard?tab=monitoring", "Monitoring Pengguna", Users],
+          ["/dashboard?tab=schools", "Akun Sekolah", GraduationCap],
+        ]
       : []),
     ["/apps", "Aplikasi", Grid2X2],
     ["/apps?filter=favorite", "Favorit", Heart],

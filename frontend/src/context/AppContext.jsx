@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import api from "../api";
 
 function readStorage(key, fallback) {
@@ -21,13 +21,13 @@ export function AppProvider({ children }) {
   const [appsError, setAppsError] = useState("");
 
   const persist = (key, value) => localStorage.setItem(key, JSON.stringify(value));
-  
+
   const login = async (email, password) => {
     try {
       const res = await api.post('/auth/login', { email, password });
       const { user: userData, session } = res.data;
-      
-      const nextUser = { 
+
+      const nextUser = {
         id: userData.id,
         name: userData.profile?.full_name || email.split("@")[0],
         email: userData.email,
@@ -35,7 +35,7 @@ export function AppProvider({ children }) {
         institution: userData.profile?.institution || "",
         nip: userData.profile?.nip || "",
       };
-      
+
       localStorage.setItem('portal_token', session.access_token);
       setUser(nextUser);
       persist("portal_user", nextUser);
@@ -45,10 +45,17 @@ export function AppProvider({ children }) {
     }
   };
 
+  const completeSchoolLogin = useCallback((userData, session) => {
+    const nextUser = { id: userData.id, npsn: userData.npsn, name: userData.name, role: "school_user", type: "school", institution: userData.name, status: userData.status };
+    localStorage.setItem("portal_token", session.access_token);
+    setUser(nextUser);
+    persist("portal_user", nextUser);
+  }, []);
+
   const logout = async () => {
     try {
       await api.post('/auth/logout');
-    } catch (_e) {} // ignore error on logout
+    } catch (_e) { } // ignore error on logout
     setUser(null);
     localStorage.removeItem("portal_user");
     localStorage.removeItem("portal_token");
@@ -109,7 +116,7 @@ export function AppProvider({ children }) {
     <AppContext.Provider
       value={{
         user, favorites, recent, apps, isLoadingApps, appsError,
-        login, logout, toggleFavorite, addRecent, refreshApps, updateUser
+        login, completeSchoolLogin, logout, toggleFavorite, addRecent, refreshApps, updateUser
       }}
     >
       {children}
