@@ -29,7 +29,7 @@ function DashboardLayout({ children }) {
     ...(user?.role === "super_user"
       ? [
           ["/dashboard?tab=monitoring", "Monitoring Pengguna", Users],
-          ["/dashboard?tab=schools", "Kelola Sekolah", GraduationCap],
+          ["/dashboard?tab=schools", "Akun Sekolah", GraduationCap],
         ]
       : []),
     ["/apps", "Aplikasi", Grid2X2],

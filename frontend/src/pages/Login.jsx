@@ -16,7 +16,7 @@ import Button from "../components/ui/Button";
 import api from "../api";
 
 function Login() {
-  const { user, login, loginSchool } = useApp();
+  const { user, login } = useApp();
   const navigate = useNavigate();
 
   // Tab mode login: 'school' (default) atau 'admin'
@@ -24,8 +24,6 @@ function Login() {
 
   // State Login Sekolah
   const [npsn, setNpsn] = useState("");
-  const [schoolPassword, setSchoolPassword] = useState("");
-  const [showSchoolPassword, setShowSchoolPassword] = useState(false);
 
   // State Login Admin / Pegawai
   const [rememberMe, setRememberMe] = useState(() => {
@@ -54,22 +52,20 @@ function Login() {
   const handleSchoolSubmit = async (event) => {
     event.preventDefault();
     const cleanNpsn = npsn.trim();
-    if (!cleanNpsn || !schoolPassword) {
-      return setError("NPSN dan password wajib diisi.");
-    }
     if (!/^\d{8}$/.test(cleanNpsn)) {
       return setError("NPSN harus berupa 8 digit angka.");
     }
-
     setIsLoading(true);
     setError("");
-    const result = await loginSchool(cleanNpsn, schoolPassword);
-    setIsLoading(false);
-
-    if (result.success) {
-      navigate("/dashboard");
-    } else {
-      setError(result.error);
+    try {
+      const response = await api.post("/auth/school-login", { npsn: cleanNpsn });
+      localStorage.setItem("portal_token", response.data.session.access_token);
+      localStorage.setItem("portal_user", JSON.stringify(response.data.user));
+      window.location.assign("/dashboard");
+    } catch (err) {
+      setError(err.response?.data?.error || "Gagal mengirim tautan verifikasi.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -122,13 +118,17 @@ function Login() {
     setForgotSuccess("");
 
     try {
-      const response = await api.post("/auth/forgot-password", { email: forgotEmail });
+      const response = await api.post("/auth/forgot-password", {
+        email: forgotEmail,
+      });
       setForgotSuccess(
-        response.data?.message || "Jika email terdaftar, instruksi reset password telah dikirim."
+        response.data?.message ||
+          "Jika email terdaftar, instruksi reset password telah dikirim.",
       );
     } catch (err) {
       setForgotError(
-        err.response?.data?.error || "Gagal mengirim instruksi reset password. Silakan coba lagi."
+        err.response?.data?.error ||
+          "Gagal mengirim instruksi reset password. Silakan coba lagi.",
       );
     } finally {
       setForgotLoading(false);
@@ -188,7 +188,7 @@ function Login() {
               }}
             >
               <UserCheck size={18} />
-              <span>Admin / Pegawai</span>
+              <span>Admin</span>
             </button>
           </div>
 
@@ -198,7 +198,7 @@ function Login() {
               <div className="auth-info-box">
                 <Info size={18} style={{ flexShrink: 0, marginTop: 2 }} />
                 <span>
-                  Akun sekolah didaftarkan oleh Super Admin Cabang Dinas. Gunakan 8 digit NPSN dan password yang telah diberikan.
+                  Masukkan NPSN untuk masuk. Setelah itu, tambahkan email sekolah di dashboard untuk verifikasi.
                 </span>
               </div>
 
@@ -209,37 +209,22 @@ function Login() {
                   inputMode="numeric"
                   maxLength={8}
                   value={npsn}
-                  onChange={(e) => setNpsn(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  onChange={(e) =>
+                    setNpsn(e.target.value.replace(/\D/g, "").slice(0, 8))
+                  }
                   placeholder="Contoh: 10261234"
                   autoFocus
                   required
                 />
               </label>
 
-              <label>
-                Password
-                <div className="password-input-wrapper">
-                  <input
-                    type={showSchoolPassword ? "text" : "password"}
-                    value={schoolPassword}
-                    onChange={(e) => setSchoolPassword(e.target.value)}
-                    placeholder="Masukkan password sekolah"
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-btn"
-                    onClick={() => setShowSchoolPassword(!showSchoolPassword)}
-                    aria-label={showSchoolPassword ? "Sembunyikan password" : "Tampilkan password"}
-                  >
-                    {showSchoolPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </label>
-
               {error && <div className="form-error">{error}</div>}
 
-              <Button type="submit" disabled={isLoading} style={{ marginTop: "8px" }}>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                style={{ marginTop: "8px" }}
+              >
                 {isLoading ? (
                   "Memeriksa..."
                 ) : (
@@ -249,8 +234,11 @@ function Login() {
                 )}
               </Button>
 
-              <p className="auth-note" style={{ marginTop: "16px", fontSize: "0.82rem" }}>
-                Lupa password atau belum terdaftar?{" "}
+              <p
+                className="auth-note"
+                style={{ marginTop: "16px", fontSize: "0.82rem" }}
+              >
+                Setelah verifikasi email, akses aplikasi akan aktif setelah disetujui admin. {" "}
                 <span style={{ color: "var(--muted)", fontWeight: 500 }}>
                   Silakan hubungi administrator Cabang Dinas Wilayah 1.
                 </span>
@@ -287,9 +275,17 @@ function Login() {
                     type="button"
                     className="password-toggle-btn"
                     onClick={() => setShowAdminPassword(!showAdminPassword)}
-                    aria-label={showAdminPassword ? "Sembunyikan password" : "Tampilkan password"}
+                    aria-label={
+                      showAdminPassword
+                        ? "Sembunyikan password"
+                        : "Tampilkan password"
+                    }
                   >
-                    {showAdminPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showAdminPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
                   </button>
                 </div>
               </label>
@@ -322,7 +318,10 @@ function Login() {
 
               <p className="auth-note">
                 Belum memiliki akun pegawai?{" "}
-                <Link to="/register" style={{ color: "var(--green-700)", fontWeight: 600 }}>
+                <Link
+                  to="/register"
+                  style={{ color: "var(--green-700)", fontWeight: 600 }}
+                >
                   Daftar sekarang
                 </Link>
               </p>
@@ -337,16 +336,39 @@ function Login() {
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Lupa Password</h3>
-              <button type="button" className="modal-close" onClick={closeForgotModal}>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={closeForgotModal}
+              >
                 <X size={20} />
               </button>
             </div>
             <div className="modal-body">
-              <p style={{ fontSize: "0.9rem", color: "var(--muted)", margin: 0 }}>
-                Masukkan alamat email yang terdaftar pada portal. Kami akan mengirimkan tautan instruksi untuk mengatur ulang password Anda.
+              <p
+                style={{ fontSize: "0.9rem", color: "var(--muted)", margin: 0 }}
+              >
+                Masukkan alamat email yang terdaftar pada portal. Kami akan
+                mengirimkan tautan instruksi untuk mengatur ulang password Anda.
               </p>
-              <form onSubmit={handleForgotSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "8px" }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontWeight: 600, fontSize: "0.85rem" }}>
+              <form
+                onSubmit={handleForgotSubmit}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                  marginTop: "8px",
+                }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                  }}
+                >
                   Email
                   <input
                     type="email"
@@ -358,7 +380,7 @@ function Login() {
                       borderRadius: "8px",
                       border: "1px solid var(--line)",
                       fontSize: "0.9rem",
-                      outline: "none"
+                      outline: "none",
                     }}
                     required
                   />
@@ -366,14 +388,32 @@ function Login() {
 
                 {forgotError && <div className="form-error">{forgotError}</div>}
                 {forgotSuccess && (
-                  <div className="form-success" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div
+                    className="form-success"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
                     <CheckCircle2 size={16} />
                     <span>{forgotSuccess}</span>
                   </div>
                 )}
 
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
-                  <Button type="button" variant="secondary" onClick={closeForgotModal}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "10px",
+                    marginTop: "8px",
+                  }}
+                >
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={closeForgotModal}
+                  >
                     Batal
                   </Button>
                   <Button type="submit" disabled={forgotLoading}>

@@ -22,11 +22,16 @@ import {
 import { useApp } from "../context/AppContext";
 import AppCard from "../components/AppCard";
 import AppFormModal from "../components/AppFormModal";
+import Button from "../components/ui/Button";
 import api from "../api";
 import { getAppIcon } from "../constants";
 
 function Dashboard() {
   const { user, apps } = useApp();
+  const [schoolEmail, setSchoolEmail] = useState("");
+  const [schoolEmailMessage, setSchoolEmailMessage] = useState("");
+  const [schoolEmailError, setSchoolEmailError] = useState("");
+  const [sendingSchoolEmail, setSendingSchoolEmail] = useState(false);
   const location = useLocation();
 
   // Tab aktif disinkronkan dengan query parameter ?tab=monitoring atau ?tab=schools
@@ -58,7 +63,6 @@ function Dashboard() {
   const [showAddSchoolModal, setShowAddSchoolModal] = useState(false);
   const [newSchoolNpsn, setNewSchoolNpsn] = useState("");
   const [newSchoolName, setNewSchoolName] = useState("");
-  const [newSchoolPassword, setNewSchoolPassword] = useState("");
   const [isAddingSchool, setIsAddingSchool] = useState(false);
   const [addSchoolError, setAddSchoolError] = useState("");
   
@@ -96,6 +100,21 @@ function Dashboard() {
   };
 
   const isSuperUser = user?.role === "super_user";
+
+  const submitSchoolEmail = async (event) => {
+    event.preventDefault();
+    setSendingSchoolEmail(true);
+    setSchoolEmailError("");
+    setSchoolEmailMessage("");
+    try {
+      const response = await api.post("/auth/school/request-link", { npsn: user.npsn, email: schoolEmail.trim() });
+      setSchoolEmailMessage(response.data.message || "Tautan verifikasi dikirim ke email sekolah.");
+    } catch (error) {
+      setSchoolEmailError(error.response?.data?.error || "Tautan verifikasi gagal dikirim.");
+    } finally {
+      setSendingSchoolEmail(false);
+    }
+  };
 
   // Fetch users jika Super User berada di tab Monitoring
   const fetchUsers = async () => {
@@ -153,7 +172,7 @@ function Dashboard() {
   // Handler: Add School
   const handleAddSchool = async (e) => {
     e.preventDefault();
-    if (!newSchoolNpsn.trim() || !newSchoolName.trim() || !newSchoolPassword.trim()) {
+    if (!newSchoolNpsn.trim() || !newSchoolName.trim()) {
       setAddSchoolError("Semua field harus diisi.");
       return;
     }
@@ -163,13 +182,11 @@ function Dashboard() {
       const res = await api.post("/api/schools", {
         npsn: newSchoolNpsn.trim(),
         name: newSchoolName.trim(),
-        password: newSchoolPassword.trim(),
       });
       setToastMessage(res.data?.message || "Sekolah berhasil ditambahkan!");
       setShowAddSchoolModal(false);
       setNewSchoolNpsn("");
       setNewSchoolName("");
-      setNewSchoolPassword("");
       fetchSchools();
     } catch (err) {
       setAddSchoolError(err.response?.data?.error || "Gagal menambahkan sekolah.");
@@ -526,6 +543,28 @@ function Dashboard() {
     }
   };
 
+  if (user?.role === "school_user") {
+    return (
+      <section className="panel" style={{ maxWidth: 760, margin: "32px auto", padding: 32 }}>
+        <span className="eyebrow">Akun sekolah · NPSN {user.npsn}</span>
+        <h1 style={{ marginTop: 12 }}>Lengkapi verifikasi sekolah</h1>
+        {user.emailVerified ? (
+          <div className="auth-info-box"><CheckCircle size={18} /><span>Email telah diverifikasi. Akses aplikasi akan terbuka setelah admin menyetujui akun sekolah Anda.</span></div>
+        ) : (
+          <>
+            <p className="form-intro">Tambahkan email aktif sekolah. Kami akan mengirim tautan verifikasi. Aplikasi akan tersedia setelah email terverifikasi dan admin menyetujui akses.</p>
+            <form onSubmit={submitSchoolEmail} style={{ maxWidth: 460, display: "grid", gap: 16 }}>
+              <label>Email sekolah<input type="email" value={schoolEmail} onChange={(event) => setSchoolEmail(event.target.value)} placeholder="sekolah@email.com" required /></label>
+              {schoolEmailError && <div className="form-error">{schoolEmailError}</div>}
+              {schoolEmailMessage && <div className="form-success">{schoolEmailMessage}</div>}
+              <button className="button" type="submit" disabled={sendingSchoolEmail}>{sendingSchoolEmail ? "Mengirim tautan..." : "Kirim tautan verifikasi"}</button>
+            </form>
+          </>
+        )}
+      </section>
+    );
+  }
+
   return (
     <div className="page-content">
       <div className="page-heading">
@@ -869,6 +908,19 @@ function Dashboard() {
       {/* TAB 3: KELOLA SEKOLAH (Khusus Super User) */}
       {activeTab === "schools" && isSuperUser && (
         <div className="monitoring-container">
+          <div className="school-admin-toolbar">
+            <div>
+              <h2>Kelola Sekolah</h2>
+              <p>Atur akun sekolah, verifikasi, dan akses aplikasi.</p>
+            </div>
+            <Button
+              type="button"
+              className="button button-primary school-add-button"
+              onClick={() => setShowAddSchoolModal(true)}
+            >
+              <Plus size={17} strokeWidth={2.25} /> Tambah Sekolah
+            </Button>
+          </div>
           <div className="monitoring-filter-bar">
             <label className="search-input monitoring-search">
               <Search size={18} />
@@ -895,9 +947,6 @@ function Dashboard() {
                 </button>
               ))}
             </div>
-            <button className="btn-primary" onClick={() => setShowAddSchoolModal(true)}>
-              <Plus size={16} /> Tambah Sekolah
-            </button>
           </div>
 
           {isLoadingSchools ? (
@@ -1381,59 +1430,63 @@ function Dashboard() {
       {/* MODAL TAMBAH SEKOLAH */}
       {showAddSchoolModal && (
         <div className="modal-overlay" onClick={() => !isAddingSchool && setShowAddSchoolModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card school-create-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Tambah Sekolah Baru</h3>
+              <div className="school-create-heading">
+                <span className="school-create-icon"><GraduationCap size={20} /></span>
+                <div>
+                  <h3>Tambah Sekolah</h3>
+                  <p>Daftarkan sekolah menggunakan NPSN.</p>
+                </div>
+              </div>
               <button className="modal-close" disabled={isAddingSchool} onClick={() => setShowAddSchoolModal(false)}>
                 <X size={18} />
               </button>
             </div>
-            <form onSubmit={handleAddSchool}>
-              <div className="modal-body">
+            <form onSubmit={handleAddSchool} className="school-create-form">
+              <div className="modal-body school-create-body">
                 {addSchoolError && (
                   <div className="form-error" style={{ marginBottom: "16px" }}>
                     <AlertCircle size={16} /> {addSchoolError}
                   </div>
                 )}
-                <div className="form-group">
-                  <label>NPSN Sekolah *</label>
+                <div className="form-group school-form-group">
+                  <label htmlFor="new-school-npsn">NPSN Sekolah</label>
                   <input
+                    id="new-school-npsn"
                     type="text"
+                    inputMode="numeric"
+                    maxLength={8}
                     value={newSchoolNpsn}
-                    onChange={(e) => setNewSchoolNpsn(e.target.value)}
-                    placeholder="Masukkan NPSN sekolah"
+                    onChange={(e) => setNewSchoolNpsn(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                    placeholder="Contoh: 10261234"
+                    required
                     disabled={isAddingSchool}
                   />
+                  <span>Masukkan 8 digit nomor pokok sekolah.</span>
                 </div>
-                <div className="form-group">
-                  <label>Nama Sekolah *</label>
+                <div className="form-group school-form-group">
+                  <label htmlFor="new-school-name">Nama Sekolah</label>
                   <input
+                    id="new-school-name"
                     type="text"
                     value={newSchoolName}
                     onChange={(e) => setNewSchoolName(e.target.value)}
-                    placeholder="Masukkan nama sekolah"
+                    placeholder="Contoh: SMA Negeri 1 Medan"
+                    required
                     disabled={isAddingSchool}
                   />
                 </div>
-                <div className="form-group">
-                  <label>Password Awal *</label>
-                  <input
-                    type="password"
-                    value={newSchoolPassword}
-                    onChange={(e) => setNewSchoolPassword(e.target.value)}
-                    placeholder="Masukkan password untuk akses sekolah"
-                    disabled={isAddingSchool}
-                  />
-                </div>
+                <div className="school-create-note"><CheckCircle2 size={17} /><span>Aplikasi kategori Pendidikan akan diberikan otomatis. Sekolah perlu memverifikasi email sebelum akses dibuka.</span></div>
               </div>
               <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", padding: "16px 20px", borderTop: "1px solid var(--line)" }}>
                 <button type="button" className="btn-cancel" disabled={isAddingSchool} onClick={() => setShowAddSchoolModal(false)}>
                   Batal
                 </button>
-                <button type="submit" className="btn-primary" disabled={isAddingSchool}>
+                <Button type="submit" disabled={isAddingSchool}>
                   <PlusCircle size={16} />
                   {isAddingSchool ? "Menambahkan..." : "Tambah Sekolah"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

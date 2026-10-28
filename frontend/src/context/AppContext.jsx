@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import api from "../api";
 
 function readStorage(key, fallback) {
@@ -45,29 +45,12 @@ export function AppProvider({ children }) {
     }
   };
 
-  const loginSchool = async (npsn, password) => {
-    try {
-      const res = await api.post('/auth/school-login', { npsn, password });
-      const { user: userData, session } = res.data;
-
-      const nextUser = {
-        id: userData.id,
-        npsn: userData.npsn,
-        name: userData.name,
-        role: "school_user",
-        type: "school",
-        institution: userData.name,
-        status: userData.status,
-      };
-
-      localStorage.setItem('portal_token', session.access_token);
-      setUser(nextUser);
-      persist("portal_user", nextUser);
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.response?.data?.error || "Gagal masuk sebagai sekolah." };
-    }
-  };
+  const completeSchoolLogin = useCallback((userData, session) => {
+    const nextUser = { id: userData.id, npsn: userData.npsn, name: userData.name, role: "school_user", type: "school", institution: userData.name, status: userData.status };
+    localStorage.setItem("portal_token", session.access_token);
+    setUser(nextUser);
+    persist("portal_user", nextUser);
+  }, []);
 
   const logout = async () => {
     try {
@@ -133,7 +116,7 @@ export function AppProvider({ children }) {
     <AppContext.Provider
       value={{
         user, favorites, recent, apps, isLoadingApps, appsError,
-        login, loginSchool, logout, toggleFavorite, addRecent, refreshApps, updateUser
+        login, completeSchoolLogin, logout, toggleFavorite, addRecent, refreshApps, updateUser
       }}
     >
       {children}

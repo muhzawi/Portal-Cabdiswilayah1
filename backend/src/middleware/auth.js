@@ -19,14 +19,23 @@ export async function requireAuth(req, res, next) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     if (decoded.type === "school") {
+      const { data: school, error } = await supabaseAdmin
+        .from("schools")
+        .select("npsn, name, status, auth_user_id")
+        .eq("npsn", decoded.npsn)
+        .maybeSingle();
+      if (error) return next(error);
+      if (!school || school.status === "rejected") return res.status(403).json({ error: "Akun sekolah tidak tersedia." });
       // Token sekolah valid — set req.user dengan data sekolah
       req.user = {
-        id: decoded.npsn,
-        npsn: decoded.npsn,
-        name: decoded.name,
+        id: school.npsn,
+        npsn: school.npsn,
+        name: school.name,
         role: "school_user",
         type: "school",
         profile: { role: "school_user" },
+        status: school.status,
+        emailVerified: Boolean(school.auth_user_id),
       };
       req.accessToken = token;
       return next();
@@ -81,6 +90,12 @@ export async function requireApplicationAccess(req, res, next) {
 
   // School user: cek akses dari tabel school_application_access
   if (userRole === "school_user") {
+    const { data: school, error: schoolError } = await supabaseAdmin.from("schools")
+      .select("status, auth_user_id").eq("npsn", req.user.npsn || req.user.id).maybeSingle();
+    if (schoolError) return next(schoolError);
+    if (!school || school.status !== "approved" || !school.auth_user_id) {
+      return res.status(403).json({ error: "Verifikasi email dan persetujuan admin diperlukan sebelum membuka aplikasi." });
+    }
     const { data, error } = await supabaseAdmin
       .from("school_application_access")
       .select("application_id")

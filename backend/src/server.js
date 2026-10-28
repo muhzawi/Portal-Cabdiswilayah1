@@ -865,69 +865,70 @@ app.put(
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-change-me";
 
-// Login sekolah via NPSN + password
+// Sekolah meminta tautan masuk sekali pakai; verifikasi email ditangani Supabase Auth.
+app.post("/auth/school/request-link", requireAuth, async (req, res, next) => {
+  try {
+    const npsn = typeof req.body.npsn === "string" ? req.body.npsn.trim() : "";
+    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    if (!/^\d{8}$/.test(npsn) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "NPSN atau alamat email tidak valid." });
+    }
+    const { data: school, error } = await supabaseAdmin.from("schools")
+      .select("npsn, name, status, email").eq("npsn", npsn).maybeSingle();
+    if (error) return next(error);
+    if (!school) return res.status(404).json({ error: "NPSN belum terdaftar. Hubungi administrator Cabang Dinas." });
+    if (req.user?.type !== "school" || req.user.npsn !== npsn) return res.status(403).json({ error: "Sesi sekolah tidak sesuai." });
+    if (school.status === "rejected") return res.status(403).json({ error: "Permohonan sekolah ditolak. Hubungi administrator." });
+    if (school.email && school.email.toLowerCase() !== email) {
+      return res.status(409).json({ error: "Email berbeda dari email sekolah yang sudah terdaftar. Hubungi administrator." });
+    }
+
+    const { error: saveError } = await supabaseAdmin.from("schools").update({
+      email, status: school.email ? school.status : "pending", updated_at: new Date().toISOString(),
+    }).eq("npsn", npsn);
+    if (saveError) return next(saveError);
+
+    const redirectTo = `${process.env.FRONTEND_URL || "http://localhost:5173"}/school/verify`;
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: redirectTo, shouldCreateUser: true, data: { role: "school_user", status: "pending", npsn, full_name: school.name } },
+    });
+    if (otpError) return res.status(400).json({ error: otpError.message });
+    res.json({ message: "Tautan verifikasi telah dikirim. Setelah email diverifikasi, admin perlu menyetujui akses sekolah." });
+  } catch (error) { next(error); }
+});
+
+app.post("/auth/school/verify", async (req, res, next) => {
+  try {
+    const token = (req.get("authorization") || "").replace(/^Bearer /, "");
+    if (!token) return res.status(401).json({ error: "Tautan verifikasi tidak valid." });
+    const { data: authData, error: authError } = await supabaseForToken(token).auth.getUser();
+    if (authError || !authData.user?.email_confirmed_at) return res.status(401).json({ error: "Email belum terverifikasi atau tautan sudah kedaluwarsa." });
+    const { data: school, error } = await supabaseAdmin.from("schools")
+      .select("npsn, name, status, email").eq("email", authData.user.email.toLowerCase()).maybeSingle();
+    if (error) return next(error);
+    if (!school) return res.status(403).json({ error: "Email tidak terhubung ke sekolah yang terdaftar." });
+    await supabaseAdmin.from("schools").update({ auth_user_id: authData.user.id }).eq("npsn", school.npsn);
+    if (school.status === "pending") return res.status(403).json({ error: "Email berhasil diverifikasi. Permohonan akses Anda menunggu persetujuan admin." });
+    if (school.status !== "approved") return res.status(403).json({ error: "Akses sekolah belum disetujui admin." });
+    const schoolToken = jwt.sign({ npsn: school.npsn, name: school.name, role: "school_user", type: "school" }, JWT_SECRET, { expiresIn: "24h" });
+    res.json({ session: { access_token: schoolToken }, user: { id: school.npsn, npsn: school.npsn, name: school.name, role: "school_user", type: "school", status: school.status } });
+  } catch (error) { next(error); }
+});
+
+// Login awal sekolah menggunakan NPSN; sesi hanya dapat melihat halaman onboarding.
 app.post("/auth/school-login", async (req, res, next) => {
   try {
-    const { npsn, password } = req.body;
-    if (!npsn || !password) {
-      return res.status(400).json({ error: "NPSN dan password wajib diisi." });
-    }
-
-    // Cari sekolah berdasarkan NPSN
-    const { data: school, error } = await supabaseAdmin
-      .from("schools")
-      .select("*")
-      .eq("npsn", npsn.trim())
-      .single();
-
-    if (error || !school) {
-      return res.status(401).json({ error: "NPSN atau password salah." });
-    }
-
-    // Verifikasi password
-    const isValid = await bcrypt.compare(password, school.password_hash);
-    if (!isValid) {
-      return res.status(401).json({ error: "NPSN atau password salah." });
-    }
-
-    // Cek status akun
-    if (school.status === "pending") {
-      return res.status(403).json({
-        error: "Akun sekolah masih dalam proses verifikasi. Hubungi admin.",
-      });
-    }
-    if (school.status === "rejected") {
-      return res.status(403).json({
-        error: "Akun sekolah telah ditolak. Hubungi admin.",
-      });
-    }
-
-    // Generate JWT token untuk sekolah
-    const token = jwt.sign(
-      {
-        npsn: school.npsn,
-        name: school.name,
-        role: "school_user",
-        type: "school",
-      },
-      JWT_SECRET,
-      { expiresIn: "24h" },
-    );
-
-    res.json({
-      session: { access_token: token },
-      user: {
-        id: school.npsn,
-        npsn: school.npsn,
-        name: school.name,
-        role: "school_user",
-        type: "school",
-        status: school.status,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+    const npsn = typeof req.body.npsn === "string" ? req.body.npsn.trim() : "";
+    if (!/^\d{8}$/.test(npsn)) return res.status(400).json({ error: "NPSN harus berupa 8 digit angka." });
+    const { data: school, error } = await supabaseAdmin.from("schools")
+      .select("npsn, name, status, email, auth_user_id").eq("npsn", npsn).maybeSingle();
+    if (error) return next(error);
+    if (!school) return res.status(404).json({ error: "NPSN belum terdaftar. Hubungi administrator." });
+    if (school.status === "rejected") return res.status(403).json({ error: "Akun sekolah ditolak. Hubungi administrator." });
+    const token = jwt.sign({ npsn, name: school.name, role: "school_user", type: "school" }, JWT_SECRET, { expiresIn: "24h" });
+    res.json({ session: { access_token: token }, user: { id: npsn, npsn, name: school.name, role: "school_user", type: "school", status: school.status, email: school.email, emailVerified: Boolean(school.auth_user_id) } });
+  } catch (error) { next(error); }
 });
 
 // CRUD Sekolah (super_user only)
@@ -976,7 +977,7 @@ app.post(
   requireRole("super_user"),
   async (req, res, next) => {
     try {
-      const { npsn, name, password } = req.body;
+      const { npsn, name } = req.body;
 
       if (!npsn || typeof npsn !== "string" || !/^\d{8}$/.test(npsn.trim())) {
         return res
@@ -986,12 +987,6 @@ app.post(
       if (!name || typeof name !== "string" || !name.trim()) {
         return res.status(400).json({ error: "Nama sekolah wajib diisi." });
       }
-      if (!password || typeof password !== "string" || password.length < 6) {
-        return res
-          .status(400)
-          .json({ error: "Password minimal 6 karakter." });
-      }
-
       // Cek apakah NPSN sudah terdaftar
       const { data: existing } = await supabaseAdmin
         .from("schools")
@@ -1005,7 +1000,14 @@ app.post(
           .json({ error: "NPSN sudah terdaftar di sistem." });
       }
 
-      const passwordHash = await bcrypt.hash(password, 10);
+      // Kolom password lama tetap terisi untuk kompatibilitas skema; sekolah kini login via NPSN.
+      const passwordHash = await bcrypt.hash(randomUUID(), 10);
+
+      const { data: educationApps, error: appsError } = await supabaseAdmin
+        .from("applications")
+        .select("id")
+        .ilike("category", "pendidikan");
+      if (appsError) return next(appsError);
 
       const { data, error } = await supabaseAdmin
         .from("schools")
@@ -1020,9 +1022,19 @@ app.post(
 
       if (error) return next(error);
 
+      if (educationApps?.length) {
+        const { error: accessError } = await supabaseAdmin
+          .from("school_application_access")
+          .insert(educationApps.map((app) => ({ school_npsn: data.npsn, application_id: app.id })));
+        if (accessError) {
+          await supabaseAdmin.from("schools").delete().eq("npsn", data.npsn);
+          return next(accessError);
+        }
+      }
+
       res.status(201).json({
-        message: `Akun sekolah ${data.name} (NPSN: ${data.npsn}) berhasil dibuat.`,
-        school: data,
+        message: `Sekolah ${data.name} (NPSN: ${data.npsn}) berhasil dibuat dengan akses awal ke ${educationApps?.length || 0} aplikasi kategori Pendidikan.`,
+        school: { ...data, app_access: (educationApps || []).map((app) => app.id) },
       });
     } catch (error) {
       next(error);
@@ -1183,6 +1195,13 @@ app.get("/api/apps", requireAuth, async (_req, res, next) => {
     .order("name");
 
   const userRole = _req.user.profile?.role || _req.user.role;
+
+  if (userRole === "school_user") {
+    const { data: school, error } = await supabaseAdmin.from("schools")
+      .select("status, auth_user_id").eq("npsn", _req.user.npsn || _req.user.id).maybeSingle();
+    if (error) return next(error);
+    if (!school || school.status !== "approved" || !school.auth_user_id) return res.json({ applications: [] });
+  }
 
   if (userRole === "school_user") {
     // Sekolah: ambil akses dari tabel school_application_access
