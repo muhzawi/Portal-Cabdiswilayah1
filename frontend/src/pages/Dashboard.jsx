@@ -545,22 +545,43 @@ function Dashboard() {
 
   if (user?.role === "school_user") {
     return (
-      <section className="panel" style={{ maxWidth: 760, margin: "32px auto", padding: 32 }}>
-        <span className="eyebrow">Akun sekolah · NPSN {user.npsn}</span>
-        <h1 style={{ marginTop: 12 }}>Lengkapi verifikasi sekolah</h1>
-        {user.emailVerified ? (
-          <div className="auth-info-box"><CheckCircle size={18} /><span>Email telah diverifikasi. Akses aplikasi akan terbuka setelah admin menyetujui akun sekolah Anda.</span></div>
-        ) : (
-          <>
-            <p className="form-intro">Tambahkan email aktif sekolah. Kami akan mengirim tautan verifikasi. Aplikasi akan tersedia setelah email terverifikasi dan admin menyetujui akses.</p>
-            <form onSubmit={submitSchoolEmail} style={{ maxWidth: 460, display: "grid", gap: 16 }}>
-              <label>Email sekolah<input type="email" value={schoolEmail} onChange={(event) => setSchoolEmail(event.target.value)} placeholder="sekolah@email.com" required /></label>
-              {schoolEmailError && <div className="form-error">{schoolEmailError}</div>}
-              {schoolEmailMessage && <div className="form-success">{schoolEmailMessage}</div>}
-              <button className="button" type="submit" disabled={sendingSchoolEmail}>{sendingSchoolEmail ? "Mengirim tautan..." : "Kirim tautan verifikasi"}</button>
-            </form>
-          </>
-        )}
+      <section className="school-onboarding-wrap">
+        <div className="school-onboarding-card">
+          <div className="school-onboarding-heading">
+            <span className="school-onboarding-icon"><GraduationCap size={25} /></span>
+            <div>
+              <span className="eyebrow">Akun Sekolah · NPSN {user.npsn}</span>
+              <h1>{user.emailVerified ? "Email berhasil diverifikasi" : "Verifikasi email sekolah"}</h1>
+              <p>{user.emailVerified ? "Tahap verifikasi email selesai." : "Satu langkah lagi sebelum akun sekolah dapat menggunakan layanan portal."}</p>
+            </div>
+          </div>
+
+          {user.emailVerified ? (
+            <div className="school-onboarding-status">
+              <CheckCircle2 size={21} />
+              <div><strong>Email terverifikasi</strong><span>Akses aplikasi Pendidikan akan terbuka setelah admin menyetujui akun sekolah.</span></div>
+            </div>
+          ) : (
+            <>
+              <div className="school-onboarding-copy">
+                <h2>Tambahkan email aktif sekolah</h2>
+                <p>Kami akan mengirim tautan konfirmasi ke alamat ini. Buka tautan dari email untuk menyelesaikan verifikasi.</p>
+              </div>
+              <form onSubmit={submitSchoolEmail} className="school-email-form">
+                <label htmlFor="school-contact-email">Email sekolah</label>
+                <input id="school-contact-email" type="email" autoComplete="email" value={schoolEmail} onChange={(event) => setSchoolEmail(event.target.value)} placeholder="contoh: sekolah@email.com" required />
+                <span className="school-email-hint">Gunakan alamat email yang dapat diakses oleh pihak sekolah.</span>
+                {schoolEmailError && <div className="form-error">{schoolEmailError}</div>}
+                {schoolEmailMessage && <div className="school-email-success"><CheckCircle2 size={18} /><span>{schoolEmailMessage}</span></div>}
+                <Button type="submit" disabled={sendingSchoolEmail}>
+                  {sendingSchoolEmail ? "Mengirim tautan..." : "Kirim tautan verifikasi"}
+                  {!sendingSchoolEmail && <ArrowRight size={17} />}
+                </Button>
+              </form>
+              <div className="school-onboarding-footnote"><CheckCircle size={16} /><span>Aplikasi kategori Pendidikan tersedia setelah email terverifikasi dan akun disetujui admin.</span></div>
+            </>
+          )}
+        </div>
       </section>
     );
   }
@@ -1034,13 +1055,7 @@ function Dashboard() {
                           >
                             <Pencil size={14} /> Edit
                           </button>
-                          <button
-                            className="btn-detail"
-                            onClick={() => setResetSchool(school)}
-                            title="Reset Password"
-                          >
-                            <Key size={14} /> Reset PW
-                          </button>
+                        
                           <button
                             className="btn-reject"
                             onClick={() => setDeletingSchool(school)}
@@ -1574,46 +1589,7 @@ function Dashboard() {
         </div>
       )}
 
-      {/* MODAL RESET PASSWORD */}
-      {resetSchool && (
-        <div className="modal-overlay" onClick={() => !isResettingPassword && setResetSchool(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Reset Password Sekolah</h3>
-              <button className="modal-close" disabled={isResettingPassword} onClick={() => setResetSchool(null)}>
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleResetPassword}>
-              <div className="modal-body">
-                <p style={{ marginBottom: "16px", color: "var(--ink)" }}>
-                  Reset password untuk sekolah: <strong>{resetSchool.name}</strong>
-                </p>
-                <div className="form-group">
-                  <label>Password Baru *</label>
-                  <input
-                    type="password"
-                    value={resetPasswordVal}
-                    onChange={(e) => setResetPasswordVal(e.target.value)}
-                    placeholder="Masukkan password baru"
-                    disabled={isResettingPassword}
-                    autoFocus
-                  />
-                </div>
-              </div>
-              <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", padding: "16px 20px", borderTop: "1px solid var(--line)" }}>
-                <button type="button" className="btn-cancel" disabled={isResettingPassword} onClick={() => setResetSchool(null)}>
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary" disabled={isResettingPassword}>
-                  <Key size={16} />
-                  {isResettingPassword ? "Mereset..." : "Reset Password"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+     
 
       {/* MODAL HAPUS SEKOLAH */}
       {deletingSchool && (

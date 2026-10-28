@@ -29,7 +29,7 @@ function Profile() {
             <Mail size={18} />
             <div>
               <span>Email</span>
-              <strong>{user.email}</strong>
+              <strong>{user.email || "Belum diverifikasi"}</strong>
             </div>
           </div>
           <div className="profile-detail-item">
@@ -42,12 +42,12 @@ function Profile() {
           <div className="profile-detail-item">
             <UserRound size={18} />
             <div>
-              <span>NIP</span>
+              <span>{user.role === "school_user" ? "NPSN" : "NIP"}</span>
               <strong>{user.nip || "-"}</strong>
             </div>
           </div>
         </div>
-        <div className="profile-overview-actions">
+        {user.role !== "school_user" && <div className="profile-overview-actions">
           <Button
             variant="primary"
             onClick={() => {
@@ -56,7 +56,7 @@ function Profile() {
           >
             Edit profil <ArrowRight size={16} />
           </Button>
-        </div>
+        </div>}
       </section>
     </div>
   );

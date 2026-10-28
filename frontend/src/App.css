@@ -1553,6 +1553,206 @@ em {
   background: var(--surface);
 }
 
+.school-onboarding-wrap {
+  width: min(100%, 760px);
+  margin: clamp(20px, 5vh, 52px) auto;
+  padding: 0 4px;
+}
+
+.school-onboarding-card {
+  padding: clamp(22px, 4vw, 38px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 16px 42px rgba(24, 49, 38, 0.07);
+}
+
+.school-onboarding-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.school-onboarding-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  color: var(--green-700);
+  background: var(--green-50);
+}
+
+.school-onboarding-heading .eyebrow {
+  display: block;
+  margin: 1px 0 8px;
+}
+
+.school-onboarding-heading h1 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  line-height: 1.25;
+}
+
+.school-onboarding-heading p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.school-onboarding-copy {
+  margin: 25px 0 18px;
+}
+
+.school-onboarding-copy h2 {
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.school-onboarding-copy p {
+  max-width: 580px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.school-email-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px 14px;
+  align-items: center;
+}
+
+.school-email-form label,
+.school-email-hint,
+.school-email-form .form-error,
+.school-email-success {
+  grid-column: 1 / -1;
+}
+
+.school-email-form label {
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.school-email-form input {
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.school-email-form input:focus {
+  border-color: var(--green-600);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(34, 110, 73, 0.12);
+}
+
+.school-email-hint {
+  margin-top: -3px;
+  color: var(--muted);
+  font-size: 0.77rem;
+}
+
+.school-email-form > .button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 44px;
+  margin-top: 7px;
+  padding: 11px 17px;
+}
+
+.school-email-success,
+.school-onboarding-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 1px solid rgba(34, 110, 73, 0.16);
+  border-radius: 10px;
+  background: var(--green-50);
+  color: var(--green-800);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.school-email-success svg,
+.school-onboarding-status svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.school-onboarding-status {
+  margin-top: 24px;
+  padding: 17px;
+}
+
+.school-onboarding-status div {
+  display: grid;
+  gap: 4px;
+}
+
+.school-onboarding-status strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.school-onboarding-status span {
+  color: var(--muted);
+}
+
+.school-onboarding-footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.school-onboarding-footnote svg {
+  flex: 0 0 auto;
+  color: var(--green-700);
+}
+
+@media (max-width: 520px) {
+  .school-onboarding-wrap {
+    margin-top: 14px;
+  }
+
+  .school-onboarding-heading {
+    gap: 12px;
+  }
+
+  .school-onboarding-icon {
+    flex-basis: 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  .school-email-form > .button {
+    width: 100%;
+  }
+}
+
 .school-admin-toolbar h2 {
   margin: 0;
   color: var(--ink);

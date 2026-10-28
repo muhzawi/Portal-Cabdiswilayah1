@@ -250,7 +250,7 @@ function Login() {
           {loginMode === "admin" && (
             <form onSubmit={handleAdminSubmit}>
               <label>
-                Email Pegawai / Admin
+                Email 
                 <input
                   type="email"
                   value={email}

@@ -366,6 +366,13 @@ function profileSchemaMigrationResponse(res, err) {
 }
 
 app.get("/api/profile", requireAuth, async (req, res, next) => {
+  if (req.user?.type === "school") {
+    const { data: school, error } = await supabaseAdmin.from("schools")
+      .select("npsn, name, email, status").eq("npsn", req.user.npsn).maybeSingle();
+    if (error) return next(error);
+    if (!school) return res.status(404).json({ error: "Profil sekolah tidak ditemukan." });
+    return res.json({ profile: { id: school.npsn, full_name: school.name, institution: school.name, nip: school.npsn, npsn: school.npsn, email: school.email || "", role: "school_user", status: school.status } });
+  }
   let profileQuery = await supabaseAdmin
     .from("profiles")
     .select("id, full_name, institution, nip, role, status")
@@ -874,7 +881,7 @@ app.post("/auth/school/request-link", requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: "NPSN atau alamat email tidak valid." });
     }
     const { data: school, error } = await supabaseAdmin.from("schools")
-      .select("npsn, name, status, email").eq("npsn", npsn).maybeSingle();
+      .select("npsn, name, status, email, pending_email").eq("npsn", npsn).maybeSingle();
     if (error) return next(error);
     if (!school) return res.status(404).json({ error: "NPSN belum terdaftar. Hubungi administrator Cabang Dinas." });
     if (req.user?.type !== "school" || req.user.npsn !== npsn) return res.status(403).json({ error: "Sesi sekolah tidak sesuai." });
@@ -883,8 +890,15 @@ app.post("/auth/school/request-link", requireAuth, async (req, res, next) => {
       return res.status(409).json({ error: "Email berbeda dari email sekolah yang sudah terdaftar. Hubungi administrator." });
     }
 
+    const { data: otherSchools, error: duplicateError } = await supabaseAdmin.from("schools")
+      .select("npsn, email, pending_email").neq("npsn", npsn);
+    if (duplicateError) return next(duplicateError);
+    if ((otherSchools || []).some((other) => other.email?.toLowerCase() === email || other.pending_email?.toLowerCase() === email)) {
+      return res.status(409).json({ error: "Email tersebut sudah digunakan oleh sekolah lain." });
+    }
+
     const { error: saveError } = await supabaseAdmin.from("schools").update({
-      email, status: school.email ? school.status : "pending", updated_at: new Date().toISOString(),
+      pending_email: email, status: school.email ? school.status : "pending", updated_at: new Date().toISOString(),
     }).eq("npsn", npsn);
     if (saveError) return next(saveError);
 
@@ -904,15 +918,23 @@ app.post("/auth/school/verify", async (req, res, next) => {
     if (!token) return res.status(401).json({ error: "Tautan verifikasi tidak valid." });
     const { data: authData, error: authError } = await supabaseForToken(token).auth.getUser();
     if (authError || !authData.user?.email_confirmed_at) return res.status(401).json({ error: "Email belum terverifikasi atau tautan sudah kedaluwarsa." });
-    const { data: school, error } = await supabaseAdmin.from("schools")
-      .select("npsn, name, status, email").eq("email", authData.user.email.toLowerCase()).maybeSingle();
+    let { data: school, error } = await supabaseAdmin.from("schools")
+      .select("npsn, name, status, email, pending_email").eq("pending_email", authData.user.email.toLowerCase()).maybeSingle();
     if (error) return next(error);
+    if (!school) {
+      const existing = await supabaseAdmin.from("schools").select("npsn, name, status, email, pending_email")
+        .eq("email", authData.user.email.toLowerCase()).maybeSingle();
+      school = existing.data;
+      error = existing.error;
+      if (error) return next(error);
+    }
     if (!school) return res.status(403).json({ error: "Email tidak terhubung ke sekolah yang terdaftar." });
-    await supabaseAdmin.from("schools").update({ auth_user_id: authData.user.id }).eq("npsn", school.npsn);
+    const { error: saveError } = await supabaseAdmin.from("schools").update({ email: authData.user.email.toLowerCase(), pending_email: null, auth_user_id: authData.user.id, updated_at: new Date().toISOString() }).eq("npsn", school.npsn);
+    if (saveError) return next(saveError);
     if (school.status === "pending") return res.status(403).json({ error: "Email berhasil diverifikasi. Permohonan akses Anda menunggu persetujuan admin." });
     if (school.status !== "approved") return res.status(403).json({ error: "Akses sekolah belum disetujui admin." });
     const schoolToken = jwt.sign({ npsn: school.npsn, name: school.name, role: "school_user", type: "school" }, JWT_SECRET, { expiresIn: "24h" });
-    res.json({ session: { access_token: schoolToken }, user: { id: school.npsn, npsn: school.npsn, name: school.name, role: "school_user", type: "school", status: school.status } });
+    res.json({ session: { access_token: schoolToken }, user: { id: school.npsn, npsn: school.npsn, name: school.name, email: authData.user.email, emailVerified: true, role: "school_user", type: "school", status: school.status } });
   } catch (error) { next(error); }
 });
 
@@ -927,7 +949,7 @@ app.post("/auth/school-login", async (req, res, next) => {
     if (!school) return res.status(404).json({ error: "NPSN belum terdaftar. Hubungi administrator." });
     if (school.status === "rejected") return res.status(403).json({ error: "Akun sekolah ditolak. Hubungi administrator." });
     const token = jwt.sign({ npsn, name: school.name, role: "school_user", type: "school" }, JWT_SECRET, { expiresIn: "24h" });
-    res.json({ session: { access_token: token }, user: { id: npsn, npsn, name: school.name, role: "school_user", type: "school", status: school.status, email: school.email, emailVerified: Boolean(school.auth_user_id) } });
+    res.json({ session: { access_token: token }, user: { id: npsn, npsn, name: school.name, full_name: school.name, institution: school.name, nip: npsn, role: "school_user", type: "school", status: school.status, email: school.email, emailVerified: Boolean(school.auth_user_id) } });
   } catch (error) { next(error); }
 });
 
@@ -941,7 +963,7 @@ app.get(
     try {
       const { data, error } = await supabaseAdmin
         .from("schools")
-        .select("npsn, name, status, created_at, updated_at")
+        .select("npsn, name, email, auth_user_id, status, created_at, updated_at")
         .order("created_at", { ascending: false });
       if (error) return next(error);
 
@@ -958,9 +980,10 @@ app.get(
         accessMap.get(row.school_npsn).push(row.application_id);
       });
 
-      const schools = (data || []).map((s) => ({
-        ...s,
-        app_access: accessMap.get(s.npsn) || [],
+      const schools = (data || []).map(({ auth_user_id, ...school }) => ({
+        ...school,
+        email_verified: Boolean(auth_user_id),
+        app_access: accessMap.get(school.npsn) || [],
       }));
 
       res.json({ schools });
