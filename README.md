@@ -10,6 +10,8 @@ Portal web terpusat untuk mengakses katalog aplikasi dan layanan pendidikan Caba
 - Superadmin dapat mengelola role, akses aplikasi, katalog, dan log aktivitas.
 - Admin dapat mengunggah aplikasi dan mengelola approval pengguna.
 - Staff hanya dapat membuka aplikasi yang diberikan dan mengirim dokumen melalui aplikasi tersebut.
+- Sekolah dapat masuk menggunakan NPSN, memverifikasi email, dan mengakses aplikasi yang ditugaskan setelah disetujui admin.
+- Superadmin dapat mengelola akun sekolah beserta hak akses aplikasinya.
 - Pencarian aplikasi, kategori, favorit, aplikasi terakhir dibuka, tema light/dark, dan tampilan responsive mobile.
 
 ## Tech Stack
@@ -102,19 +104,28 @@ cd Portal-Cabdiswilayah1
 CREATE DATABASE portal_cabdiswilayah1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-2. Jalankan skema tabel aplikasi dan user dari schema/backup database yang digunakan project.
-3. Jalankan migrasi audit log:
+2. Impor skema MySQL proyek (`database.sql`) atau skema/backup database yang digunakan.
+3. Jika tabel token reset password belum tersedia, jalankan migrasi:
 
 ```bash
-mysql -u root -p portal_cabdiswilayah1 < backend/mysql/008_activity_logs.sql
+mysql -u root -p portal_cabdiswilayah1 < backend/mysql/002_create_password_reset_tokens.sql
 ```
 
-4. Pastikan tabel berikut tersedia:
+4. Jalankan migrasi akun sekolah:
+
+```bash
+mysql -u root -p portal_cabdiswilayah1 < backend/mysql/003_add_school_accounts.sql
+```
+
+5. Pastikan tabel berikut tersedia:
 
    - `users`
    - `applications`
    - `user_application_access`
    - `activity_logs`
+   - `schools`
+   - `school_application_access`
+   - `school_email_verification_tokens`
 
 > `backend/supabase/` adalah migrasi legacy/reference. Runtime backend saat ini memakai MySQL dari `backend/src/db.js`.
 
@@ -136,9 +147,15 @@ DB_PORT=3306
 DB_USER=root
 DB_PASS=password_mysql_anda
 DB_NAME=portal_cabdiswilayah1
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=akun-smtp
+SMTP_PASS=password-smtp
+SMTP_FROM="Portal Cabdiswilayah I <no-reply@example.com>"
 ```
 
-Jangan commit file `.env` atau memasukkan password/database secret ke repository.
+Konfigurasi SMTP diperlukan untuk verifikasi email sekolah dan reset password. Jangan commit file `.env` atau memasukkan password/database secret ke repository.
 
 Jalankan backend:
 
@@ -189,6 +206,7 @@ Frontend membaca API dari `VITE_API_URL`. Backend harus mengizinkan origin front
 | `superadmin` / `super_user` | Akses semua aplikasi, kelola aplikasi, user, role, hak akses, dan audit log. |
 | `admin` | Upload aplikasi, melihat katalog, serta menyetujui atau menolak pendaftaran staff. |
 | `staff` / `medium_user` | Membuka aplikasi yang ditugaskan dan mengirim dokumen melalui aplikasi tersebut. |
+| `school_user` | Login dengan NPSN; setelah email diverifikasi dan akun disetujui, hanya membuka aplikasi yang ditugaskan. |
 
 Pendaftaran publik selalu menghasilkan akun `staff` dengan status `pending`. Role `admin` hanya dapat diberikan oleh superadmin.
 
@@ -208,6 +226,9 @@ Authorization: Bearer <jwt_token>
 - `POST /auth/reset-password` - ganti password dengan validasi password lama.
 - `GET /auth/me` - mengambil data user aktif.
 - `POST /auth/logout` - logout stateless.
+- `POST /auth/school-login` - membuat sesi onboarding sekolah dengan NPSN.
+- `POST /auth/school/request-link` - mengirim tautan verifikasi ke email sekolah.
+- `POST /auth/school/verify` - memverifikasi email sekolah menggunakan token sekali pakai.
 
 ### Aplikasi
 
@@ -225,6 +246,8 @@ Authorization: Bearer <jwt_token>
 - `PATCH /api/users/:id/role` - mengubah role menjadi `admin` atau `staff`, khusus superadmin.
 - `PUT /api/users/:id/app-access` - mengatur akses aplikasi, khusus superadmin.
 - `GET /api/activity-logs` - melihat audit log, khusus superadmin.
+- `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`, dan `DELETE /api/schools/:npsn` - mengelola akun sekolah oleh superadmin.
+- `PUT /api/schools/:npsn/app-access` - mengatur aplikasi yang dapat diakses sekolah.
 
 ## Perintah Development
 

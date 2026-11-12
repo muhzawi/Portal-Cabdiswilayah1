@@ -9,6 +9,28 @@ router.use(requireAuth);
 
 router.get("/", async (req, res, next) => {
   try {
+    if (req.user.type === "school") {
+      const [rows] = await db.query(
+        "SELECT npsn, name, email, status FROM schools WHERE npsn = ?",
+        [req.user.npsn],
+      );
+      if (rows.length === 0) {
+        return res.status(404).json({ error: "Profil sekolah tidak ditemukan." });
+      }
+      const school = rows[0];
+      return res.json({
+        profile: {
+          id: school.npsn,
+          full_name: school.name,
+          institution: school.name,
+          nip: school.npsn,
+          email: school.email || "",
+          role: "school_user",
+          status: school.status,
+        },
+      });
+    }
+
     const [rows] = await db.query(
       "SELECT id, full_name, email, institution, nip, role, status, created_at FROM users WHERE id = ?",
       [req.user.id],
@@ -24,6 +46,12 @@ router.get("/", async (req, res, next) => {
 
 router.patch("/", async (req, res, next) => {
   try {
+    if (req.user.type === "school") {
+      return res.status(403).json({
+        error: "Profil sekolah dikelola oleh administrator. Gunakan dashboard untuk verifikasi email.",
+      });
+    }
+
     const fullName = typeof req.body.fullName === "string" ? req.body.fullName.trim() : "";
     const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const institution = typeof req.body.institution === "string" ? req.body.institution.trim() : "";

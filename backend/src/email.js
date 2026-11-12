@@ -38,3 +38,30 @@ export async function sendPasswordResetEmail({ to, fullName, resetUrl }) {
     ].join("\n"),
   });
 }
+
+export async function sendSchoolVerificationEmail({ to, schoolName, verifyUrl }) {
+  if (!isSmtpConfigured()) {
+    throw new Error("SMTP belum dikonfigurasi.");
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: process.env.SMTP_SECURE === "true" || smtpPort === 465,
+    ...(smtpUser && smtpPass ? { auth: { user: smtpUser, pass: smtpPass } } : {}),
+  });
+
+  await transporter.sendMail({
+    from: smtpFrom,
+    to,
+    subject: "Verifikasi email akun sekolah Portal Cabdiswilayah I",
+    text: [
+      `Halo ${schoolName || "Sekolah"},`,
+      "",
+      "Gunakan tautan berikut untuk memverifikasi email akun sekolah. Tautan berlaku selama 1 jam:",
+      verifyUrl,
+      "",
+      "Jika Anda tidak meminta verifikasi ini, abaikan email ini.",
+    ].join("\n"),
+  });
+}

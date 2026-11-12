@@ -5,6 +5,7 @@ import "./App.css";
 
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
+import SchoolVerify from "./pages/SchoolVerify";
 import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
@@ -42,6 +43,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/school/verify" element={<SchoolVerify />} />
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/*" element={<ProtectedApp />} />

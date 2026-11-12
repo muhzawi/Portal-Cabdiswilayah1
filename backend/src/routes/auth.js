@@ -5,7 +5,11 @@ import { createHash, randomBytes } from "node:crypto";
 import db from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import { writeAuditLog } from "../audit.js";
-import { isSmtpConfigured, sendPasswordResetEmail } from "../email.js";
+import {
+  isSmtpConfigured,
+  sendPasswordResetEmail,
+  sendSchoolVerificationEmail,
+} from "../email.js";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
@@ -122,15 +126,18 @@ router.post("/signup", async (req, res, next) => {
 // POST /auth/register (Pendaftaran Publik untuk Staff)
 router.post("/register", async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, confirmPassword } = req.body;
 
     // Validasi input
-    if (!name || !email || !password) {
+    if (typeof name !== "string" || name.trim().length < 2 || !email || !password) {
       return res.status(400).json({ error: "Nama, email, dan password wajib diisi." });
     }
 
-    if (password.length < 8) {
+    if (typeof password !== "string" || password.length < 8) {
       return res.status(400).json({ error: "Password minimal 8 karakter." });
+    }
+    if (confirmPassword !== password) {
+      return res.status(400).json({ error: "Konfirmasi password tidak cocok dengan password." });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -157,6 +164,216 @@ router.post("/register", async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+});
+
+router.post("/school-login", async (req, res, next) => {
+  try {
+    const npsn = typeof req.body.npsn === "string" ? req.body.npsn.trim() : "";
+    if (!/^\d{8}$/.test(npsn)) {
+      return res.status(400).json({ error: "NPSN harus berupa 8 digit angka." });
+    }
+
+    const [rows] = await db.query(
+      "SELECT npsn, name, status, email, email_verified_at FROM schools WHERE npsn = ?",
+      [npsn],
+    );
+    const school = rows[0];
+    if (!school) {
+      return res.status(404).json({ error: "NPSN belum terdaftar. Hubungi administrator." });
+    }
+    if (school.status === "rejected") {
+      return res.status(403).json({ error: "Akun sekolah ditolak. Hubungi administrator." });
+    }
+
+    const token = jwt.sign(
+      { npsn: school.npsn, name: school.name, role: "school_user", type: "school" },
+      JWT_SECRET,
+      { expiresIn: "24h" },
+    );
+    res.json({
+      session: { access_token: token },
+      user: {
+        id: school.npsn,
+        npsn: school.npsn,
+        name: school.name,
+        full_name: school.name,
+        institution: school.name,
+        nip: school.npsn,
+        role: "school_user",
+        type: "school",
+        status: school.status,
+        email: school.email,
+        emailVerified: Boolean(school.email_verified_at),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/school/request-link", requireAuth, async (req, res, next) => {
+  try {
+    const npsn = typeof req.body.npsn === "string" ? req.body.npsn.trim() : "";
+    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    if (!/^\d{8}$/.test(npsn) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "NPSN atau alamat email tidak valid." });
+    }
+    if (req.user?.type !== "school" || req.user.npsn !== npsn) {
+      return res.status(403).json({ error: "Sesi sekolah tidak sesuai." });
+    }
+    if (!isSmtpConfigured()) {
+      return res.status(503).json({ error: "Layanan email belum dikonfigurasi. Hubungi administrator portal." });
+    }
+
+    const [schools] = await db.query(
+      "SELECT npsn, name, status, email FROM schools WHERE npsn = ?",
+      [npsn],
+    );
+    const school = schools[0];
+    if (!school) {
+      return res.status(404).json({ error: "NPSN belum terdaftar. Hubungi administrator Cabang Dinas." });
+    }
+    if (school.status === "rejected") {
+      return res.status(403).json({ error: "Permohonan sekolah ditolak. Hubungi administrator." });
+    }
+    if (school.email && school.email.toLowerCase() !== email) {
+      return res.status(409).json({ error: "Email berbeda dari email sekolah yang sudah terdaftar. Hubungi administrator." });
+    }
+
+    const [duplicates] = await db.query(
+      "SELECT npsn FROM schools WHERE npsn <> ? AND (email = ? OR pending_email = ?) LIMIT 1",
+      [npsn, email, email],
+    );
+    if (duplicates.length > 0) {
+      return res.status(409).json({ error: "Email tersebut sudah digunakan oleh sekolah lain." });
+    }
+
+    const rawToken = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    const connection = await db.getConnection();
+    try {
+      await connection.beginTransaction();
+      await connection.query(
+        "UPDATE school_email_verification_tokens SET used_at = NOW() WHERE school_npsn = ? AND used_at IS NULL",
+        [npsn],
+      );
+      await connection.query(
+        "UPDATE schools SET pending_email = ?, status = IF(email IS NULL, 'pending', status) WHERE npsn = ?",
+        [email, npsn],
+      );
+      await connection.query(
+        "INSERT INTO school_email_verification_tokens (token_hash, school_npsn, email, expires_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))",
+        [tokenHash, npsn, email],
+      );
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+    const verifyUrl = new URL("/school/verify", process.env.FRONTEND_URL || "http://localhost:5173");
+    verifyUrl.searchParams.set("token", rawToken);
+    try {
+      await sendSchoolVerificationEmail({
+        to: email,
+        schoolName: school.name,
+        verifyUrl: verifyUrl.toString(),
+      });
+    } catch (error) {
+      await db.query(
+        "UPDATE school_email_verification_tokens SET used_at = NOW() WHERE token_hash = ?",
+        [tokenHash],
+      );
+      next(error);
+      return;
+    }
+
+    res.json({
+      message: "Tautan verifikasi telah dikirim. Setelah email diverifikasi, admin perlu menyetujui akses sekolah.",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/school/verify", async (req, res, next) => {
+  const authorization = req.get("authorization") || "";
+  const rawToken = typeof req.body.token === "string"
+    ? req.body.token
+    : authorization.startsWith("Bearer ")
+      ? authorization.slice(7)
+      : "";
+  if (!/^[a-f0-9]{64}$/i.test(rawToken)) {
+    return res.status(400).json({ error: "Tautan verifikasi tidak valid atau sudah kedaluwarsa." });
+  }
+
+  const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [tokens] = await connection.query(
+      "SELECT school_npsn, email FROM school_email_verification_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW() FOR UPDATE",
+      [tokenHash],
+    );
+    if (tokens.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ error: "Tautan verifikasi tidak valid atau sudah kedaluwarsa." });
+    }
+
+    const { school_npsn: npsn, email } = tokens[0];
+    const [schools] = await connection.query(
+      "SELECT npsn, name, status, pending_email FROM schools WHERE npsn = ? FOR UPDATE",
+      [npsn],
+    );
+    const school = schools[0];
+    if (!school || school.pending_email !== email) {
+      await connection.rollback();
+      return res.status(403).json({ error: "Email tidak terhubung ke sekolah yang terdaftar." });
+    }
+
+    await connection.query(
+      "UPDATE schools SET email = ?, pending_email = NULL, email_verified_at = NOW() WHERE npsn = ?",
+      [email, npsn],
+    );
+    await connection.query(
+      "UPDATE school_email_verification_tokens SET used_at = NOW() WHERE token_hash = ?",
+      [tokenHash],
+    );
+    await connection.commit();
+
+    if (school.status === "pending") {
+      return res.status(403).json({ error: "Email berhasil diverifikasi. Permohonan akses Anda menunggu persetujuan admin." });
+    }
+    if (school.status !== "approved") {
+      return res.status(403).json({ error: "Akses sekolah belum disetujui admin." });
+    }
+
+    const token = jwt.sign(
+      { npsn: school.npsn, name: school.name, role: "school_user", type: "school" },
+      JWT_SECRET,
+      { expiresIn: "24h" },
+    );
+    res.json({
+      session: { access_token: token },
+      user: {
+        id: school.npsn,
+        npsn: school.npsn,
+        name: school.name,
+        email,
+        emailVerified: true,
+        role: "school_user",
+        type: "school",
+        status: school.status,
+      },
+    });
+  } catch (error) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
   }
 });
 

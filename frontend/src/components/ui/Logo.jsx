@@ -7,7 +7,7 @@ function Logo({ showSecondary = true }) {
       <div className="brand-primary">
         <img
           className="brand-logo logo-disdik"
-          src="/logo-disdik.webp"
+          src="/logo-sumut.webp"
           alt="Logo Dinas Pendidikan"
         />
         <span className="brand-text">
@@ -19,9 +19,9 @@ function Logo({ showSecondary = true }) {
       {showSecondary && (
         <div className="brand-secondary">
           <img
-            className="brand-logo-large logo-dik"
-            src="/logo-dik.webp"
-            alt="Logo Kemendikdasmen"
+            className="brand-logo-large logo-sumut"
+            src="/logo-disdik.webp"
+            alt="Lambang Provinsi Sumatera Utara"
           />
           <img
             className="brand-logo-large logo-berkah"

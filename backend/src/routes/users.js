@@ -5,6 +5,17 @@ import { writeAuditLog } from "../audit.js";
 
 const router = Router();
 
+const normalizeRole = (role) => {
+  if (role === "superadmin") return "super_user";
+  if (role === "staff") return "medium_user";
+  return role;
+};
+const databaseRole = (role) => {
+  if (role === "super_user") return "superadmin";
+  if (role === "medium_user") return "staff";
+  return role;
+};
+
 // Middleware gabungan untuk proteksi Super User
 router.use(requireAuth, requireRole("superadmin", "admin", "super_user"));
 
@@ -33,7 +44,7 @@ router.get("/", async (_req, res, next) => {
       id: u.id,
       full_name: u.full_name || "Tanpa Nama",
       email: u.email || "-",
-      role: u.role || "medium_user",
+      role: normalizeRole(u.role || "staff"),
       status: u.status || "approved",
       app_access: accessMap.get(u.id) || [],
       created_at: u.created_at,
@@ -74,7 +85,7 @@ router.get("/:id", async (req, res, next) => {
         id: user.id,
         full_name: user.full_name || "Tanpa Nama",
         email: user.email || "-",
-        role: user.role || "medium_user",
+        role: normalizeRole(user.role || "staff"),
         status: user.status || "approved",
         app_access: accessRows.map((row) => row.application_id),
         created_at: user.created_at,
@@ -179,13 +190,13 @@ router.patch("/:id/role", async (req, res, next) => {
       return res.status(400).json({ error: "Role akun Super Admin yang sedang digunakan tidak dapat diubah." });
     }
     const { role } = req.body;
-    if (!["superadmin", "admin", "staff"].includes(role)) {
+    if (!["super_user", "medium_user", "superadmin", "admin", "staff"].includes(role)) {
       return res.status(400).json({ error: "Role tidak valid." });
     }
 
     const [result] = await db.query(
       "UPDATE users SET role = ?, updated_at = NOW() WHERE id = ?",
-      [role, req.params.id]
+      [databaseRole(role), req.params.id]
     );
 
     if (result.affectedRows === 0) {
@@ -197,7 +208,7 @@ router.patch("/:id/role", async (req, res, next) => {
       [req.params.id]
     );
 
-    res.json({ user: rows[0] });
+    res.json({ user: { ...rows[0], role: normalizeRole(rows[0].role) } });
     await writeAuditLog({ actorId: req.user.id, action: "role_changed", targetId: req.params.id, details: { role } });
   } catch (error) {
     next(error);

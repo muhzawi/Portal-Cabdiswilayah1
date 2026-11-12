@@ -8,6 +8,7 @@ import authRoutes from "./routes/auth.js";
 import profileRoutes from "./routes/profile.js";
 import iconRoutes from "./routes/icons.js";
 import userRoutes from "./routes/users.js";
+import schoolRoutes from "./routes/schools.js";
 import appRoutes from "./routes/apps.js";
 import activityRoutes from "./routes/activity.js";
 
@@ -29,6 +30,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/app-icons", iconRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/schools", schoolRoutes);
 app.use("/api/activity-logs", activityRoutes);
 app.use("/api", appRoutes);
 

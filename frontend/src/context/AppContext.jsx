@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import api from "../api";
 
 function readStorage(key, fallback) {
@@ -11,11 +11,20 @@ function readStorage(key, fallback) {
 
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
-const normalizeRole = (role) =>
-  role === "superadmin" ? "super_user" : role === "staff" ? "medium_user" : role;
+
+function normalizeRole(role) {
+  if (role === "superadmin") return "super_user";
+  if (role === "staff") return "medium_user";
+  return role;
+}
 
 export function AppProvider({ children }) {
-  const [user, setUser] = useState(() => readStorage("portal_user", null));
+  const [user, setUser] = useState(() => {
+    const storedUser = readStorage("portal_user", null);
+    return storedUser
+      ? { ...storedUser, role: normalizeRole(storedUser.role) }
+      : null;
+  });
   const [favorites, setFavorites] = useState(() => readStorage("portal_favorites", []));
   const [recent, setRecent] = useState(() => readStorage("portal_recent_apps", []));
   const [apps, setApps] = useState([]);
@@ -23,22 +32,22 @@ export function AppProvider({ children }) {
   const [appsError, setAppsError] = useState("");
 
   const persist = (key, value) => localStorage.setItem(key, JSON.stringify(value));
-  
+
   const login = async (email, password) => {
     try {
       const res = await api.post('/auth/login', { email, password });
       const { user: userData, token } = res.data;
-      
-      const nextUser = { 
+
+      const nextUser = {
         id: userData.id,
-        name: userData.full_name || email.split("@")[0],
+        name: userData.full_name || userData.name || email.split("@")[0],
         email: userData.email,
         role: normalizeRole(userData.role),
         status: userData.status,
         institution: userData.institution || "",
         nip: userData.nip || "",
       };
-      
+
       localStorage.setItem('portal_token', token);
       setUser(nextUser);
       persist("portal_user", nextUser);
@@ -48,10 +57,27 @@ export function AppProvider({ children }) {
     }
   };
 
+  const completeSchoolLogin = useCallback((userData, session) => {
+    const nextUser = {
+      id: userData.id,
+      npsn: userData.npsn,
+      name: userData.name,
+      email: userData.email,
+      role: "school_user",
+      type: "school",
+      institution: userData.name,
+      status: userData.status,
+      emailVerified: Boolean(userData.emailVerified),
+    };
+    localStorage.setItem("portal_token", session.access_token);
+    setUser(nextUser);
+    persist("portal_user", nextUser);
+  }, []);
+
   const logout = async () => {
     try {
       await api.post('/auth/logout');
-    } catch (_e) {} // ignore error on logout
+    } catch (_e) { } // ignore error on logout
     setUser(null);
     localStorage.removeItem("portal_user");
     localStorage.removeItem("portal_token");
@@ -112,7 +138,7 @@ export function AppProvider({ children }) {
     <AppContext.Provider
       value={{
         user, favorites, recent, apps, isLoadingApps, appsError,
-        login, logout, toggleFavorite, addRecent, refreshApps, updateUser
+        login, completeSchoolLogin, logout, toggleFavorite, addRecent, refreshApps, updateUser
       }}
     >
       {children}

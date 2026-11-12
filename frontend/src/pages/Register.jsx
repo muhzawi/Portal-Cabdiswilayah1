@@ -54,7 +54,7 @@ function Register() {
 
       setSuccess(
         res.data?.message ||
-          "Registrasi berhasil! Akun Anda sedang dalam status pending. Silakan tunggu persetujuan (approval) dari Super User sebelum dapat masuk."
+        "Registrasi berhasil! Akun Anda sedang dalam status pending. Silakan tunggu persetujuan (approval) dari Super User sebelum dapat masuk."
       );
 
       setTimeout(() => {
@@ -110,7 +110,7 @@ function Register() {
               />
             </label>
             <label>
-              Email 
+              Email
               <input
                 type="email"
                 value={email}

@@ -30,6 +30,21 @@ router.get("/apps", requireAuth, async (req, res, next) => {
       return res.json({ applications: rows });
     }
 
+    if (req.user.type === "school") {
+      if (req.user.status !== "approved" || !req.user.emailVerified) {
+        return res.json({ applications: [] });
+      }
+      const [rows] = await db.query(
+        `SELECT a.id, a.name, a.category, a.description, a.status, a.version, a.url, a.icon_url
+         FROM applications a
+         INNER JOIN school_application_access saa ON a.id = saa.application_id
+         WHERE saa.school_npsn = ?
+         ORDER BY a.name ASC`,
+        [req.user.npsn],
+      );
+      return res.json({ applications: rows });
+    }
+
     // Untuk medium_user, ambil hanya aplikasi yang diizinkan
     const sql = `
       SELECT a.id, a.name, a.category, a.description, a.status, a.version, a.url, a.icon_url

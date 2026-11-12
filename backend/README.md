@@ -8,6 +8,8 @@ Role yang digunakan:
 - `super_user`: dapat mengakses seluruh aplikasi dan mengelola user/aplikasi.
 - `medium_user`: hanya dapat mengakses aplikasi yang ada di
   `user_application_access`.
+- `school_user`: login menggunakan NPSN, lalu hanya dapat mengakses aplikasi
+  yang ditugaskan setelah email diverifikasi dan akun disetujui.
 
 ## Menjalankan
 
@@ -17,8 +19,11 @@ Role yang digunakan:
   `mysql/002_create_password_reset_tokens.sql`. Untuk database lama yang belum
   memiliki kolom profil/ikon, jalankan `mysql/001_add_profile_and_app_icons.sql`
   sekali sebelum migrasi `002`.
-4. Isi konfigurasi SMTP di bawah ini untuk mengaktifkan reset password melalui email.
-5. Jalankan `npm install` dan `npm run dev` dari folder `backend`.
+4. Jalankan `mysql/003_add_school_accounts.sql` untuk menambahkan akun sekolah
+   dan token verifikasi email.
+5. Isi konfigurasi SMTP di bawah ini untuk mengaktifkan reset password dan
+   verifikasi email sekolah.
+6. Jalankan `npm install` dan `npm run dev` dari folder `backend`.
 
 Endpoint utama:
 
@@ -30,6 +35,11 @@ Endpoint utama:
 - `GET /api/activity-logs` (superadmin)
 - `GET /api/apps`, `GET /api/apps/:id`, `GET /api/apps/:id/redirect`
 - `POST /api/apps` (admin/superadmin), `PATCH /api/apps/:id` dan `DELETE /api/apps/:id` (superadmin)
+- `POST /auth/school-login`, `POST /auth/school/request-link`, dan
+  `POST /auth/school/verify` untuk login serta verifikasi email sekolah
+- `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`,
+  `DELETE /api/schools/:npsn`, dan
+  `PUT /api/schools/:npsn/app-access` untuk pengelolaan sekolah oleh super user
 
 Untuk memberi akses aplikasi kepada medium user, tambahkan baris pada tabel
 `user_application_access` di MySQL:
@@ -53,7 +63,8 @@ Perubahan password saat sudah login memakai `POST /auth/reset-password` dengan
 `currentPassword` dan `newPassword`.
 
 Reset password via email memakai token acak sekali pakai yang berlaku selama 1 jam.
-Konfigurasikan variabel berikut di `backend/.env`:
+Konfigurasikan variabel berikut di `backend/.env`. Konfigurasi ini dibutuhkan
+untuk reset password dan verifikasi email sekolah:
 
 ```env
 FRONTEND_URL=http://localhost:5173

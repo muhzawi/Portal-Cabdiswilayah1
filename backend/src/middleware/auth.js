@@ -18,8 +18,31 @@ export const requireAuth = async (req, res, next) => {
   }
 
   try {
+    if (decoded.type === "school" && typeof decoded.npsn === "string") {
+      const [schools] = await db.query(
+        "SELECT npsn, name, email, status, email_verified_at FROM schools WHERE npsn = ?",
+        [decoded.npsn],
+      );
+      const school = schools[0];
+      if (!school || school.status === "rejected") {
+        return res.status(401).json({ error: "Akun sekolah tidak tersedia." });
+      }
+
+      req.user = {
+        id: school.npsn,
+        npsn: school.npsn,
+        name: school.name,
+        email: school.email,
+        role: "school_user",
+        type: "school",
+        status: school.status,
+        emailVerified: Boolean(school.email_verified_at),
+      };
+      return next();
+    }
+
     const [rows] = await db.query(
-      "SELECT id, full_name, email, role, status FROM users WHERE id = ?",
+      "SELECT id, full_name, email, role, status, institution, nip FROM users WHERE id = ?",
       [decoded.id],
     );
     if (rows.length === 0) {
@@ -49,8 +72,23 @@ export const requireRole = (...roles) => {
 export const requireApplicationAccess = async (req, res, next) => {
   if (["super_user", "superadmin", "admin"].includes(req.user?.role)) return next();
 
-  // Cek akses via database MySQL
   try {
+    if (req.user?.type === "school") {
+      if (req.user.status !== "approved" || !req.user.emailVerified) {
+        return res.status(403).json({
+          error: "Verifikasi email dan persetujuan admin diperlukan sebelum membuka aplikasi.",
+        });
+      }
+      const [rows] = await db.query(
+        "SELECT application_id FROM school_application_access WHERE school_npsn = ? AND application_id = ?",
+        [req.user.npsn, req.params.id],
+      );
+      if (rows.length === 0) {
+        return res.status(403).json({ error: "Sekolah Anda tidak memiliki akses ke aplikasi ini." });
+      }
+      return next();
+    }
+
     const [rows] = await db.query(
       "SELECT * FROM user_application_access WHERE user_id = ? AND application_id = ?",
       [req.user.id, req.params.id]
