@@ -1,121 +1,193 @@
 # Portal Cabang Dinas Pendidikan Wilayah 1
 
-Portal web terpusat untuk Cabang Dinas Pendidikan Wilayah 1 Sumatera Utara. Portal ini menjadi satu pintu untuk menemukan dan mengakses aplikasi serta layanan pendidikan, dengan hak akses yang dikelola berdasarkan akun pengguna.
-
-## Deskripsi Proyek
-
-Proyek ini terdiri dari aplikasi frontend untuk pengguna dan REST API backend yang terhubung ke Supabase. Pengguna dapat melihat katalog layanan yang tersedia, sedangkan backend menangani autentikasi, profil, pengelolaan aplikasi, dan pemeriksaan hak akses. Informasi aplikasi seperti kategori, status layanan, versi, URL, dan ikon dikelola melalui katalog.
+Portal web terpusat untuk mengakses katalog aplikasi dan layanan pendidikan Cabang Dinas Pendidikan Wilayah 1 Sumatera Utara. Repository ini berisi frontend React/Vite dan backend Express dalam satu monorepo.
 
 ## Fitur Utama
 
-- **Katalog aplikasi** dengan pencarian, kategori, deskripsi, versi, ikon, dan status layanan seperti tersedia, pemeliharaan, atau offline.
-- **Autentikasi pengguna** untuk staf melalui Supabase, termasuk pendaftaran, login, reset kata sandi, dan pengelolaan profil.
-- **Login sekolah menggunakan NPSN** serta pengaturan akses aplikasi untuk akun sekolah.
-- **Kontrol akses berbasis peran**: `super_user` mengelola pengguna dan aplikasi; `medium_user` hanya dapat mengakses aplikasi yang diberikan; akun sekolah hanya dapat membuka aplikasi yang diizinkan.
-- **Persetujuan akun**: pendaftaran pengguna baru dapat menunggu persetujuan pengelola sebelum dapat masuk.
-- **Pengelolaan aplikasi dan pengguna** oleh super user, termasuk informasi katalog, status layanan, role, dan hak akses.
-- **Favorit dan riwayat aplikasi terbaru** yang disimpan pada browser pengguna.
-- **Halaman profil, pengaturan, dan tampilan responsif** untuk penggunaan desktop maupun perangkat seluler.
+- Login, registrasi staff, JWT session, dan auto logout setelah 10 menit tidak aktif.
+- Role-based access control dengan tiga role: **superadmin**, **admin**, dan **staff**.
+- Approval/rejection pengguna baru oleh admin atau superadmin.
+- Superadmin dapat mengelola role, akses aplikasi, katalog, dan log aktivitas.
+- Admin dapat mengunggah aplikasi dan mengelola approval pengguna.
+- Staff hanya dapat membuka aplikasi yang diberikan dan mengirim dokumen melalui aplikasi tersebut.
+- Sekolah dapat masuk menggunakan NPSN, memverifikasi email, dan mengakses aplikasi yang ditugaskan setelah disetujui admin.
+- Superadmin dapat mengelola akun sekolah beserta hak akses aplikasinya.
+- Pencarian aplikasi, kategori, favorit, aplikasi terakhir dibuka, tema light/dark, dan tampilan responsive mobile.
 
 ## Tech Stack
 
-| Bagian | Teknologi |
-| --- | --- |
-| Frontend | React 19, React Router 7, Vite 8 |
-| Styling dan ikon | Tailwind CSS 4, CSS, Lucide React, clsx |
-| Komunikasi API | Axios |
-| Backend | Node.js, Express 5 |
-| Keamanan dan middleware backend | Supabase JS, bcryptjs, jsonwebtoken, Helmet, CORS, Morgan |
-| Database dan autentikasi | Supabase PostgreSQL, Supabase Auth, Supabase Storage |
-| Kualitas kode frontend | Oxlint |
+### Frontend
 
-## Struktur Proyek
+- **React 19** untuk UI berbasis komponen.
+- **Vite 8** sebagai development server dan production bundler.
+- **React Router 7** untuk routing SPA.
+- **Axios** untuk komunikasi REST API.
+- **Lucide React** untuk ikon antarmuka.
+- **CSS custom responsive** untuk desktop dan mobile.
+- **Oxlint** untuk linting dan **Vitest/Testing Library** untuk kebutuhan testing.
+
+### Backend
+
+- **Node.js 20+** sebagai runtime.
+- **Express 5** sebagai REST API server.
+- **MySQL** melalui package `mysql2/promise`.
+- **JWT** melalui `jsonwebtoken` untuk autentikasi session.
+- **bcryptjs** untuk hashing password.
+- **Helmet**, **CORS**, **Morgan**, dan **dotenv** untuk keamanan, konfigurasi, serta logging.
+
+### Deployment
+
+- **Vercel** dapat digunakan untuk frontend dan backend sebagai dua project terpisah.
+- Backend menyediakan entrypoint serverless melalui `backend/api/index.js`.
+
+## Struktur Repository
 
 ```text
 Portal-Cabdiswilayah1/
 ├── backend/
-│   ├── api/                      # Entrypoint serverless untuk deployment
-│   ├── scripts/                  # Skrip administrasi, termasuk seed pengguna
+│   ├── api/                  # Entry point serverless Vercel
+│   ├── mysql/                # Migrasi database MySQL
 │   ├── src/
-│   │   ├── middleware/           # Middleware autentikasi dan pemeriksaan akses
-│   │   ├── server.js             # Endpoint REST API
-│   │   └── supabase.js           # Inisialisasi klien Supabase
-│   ├── supabase/
-│   │   ├── full_schema_setup.sql # Skema lengkap untuk database baru
-│   │   └── *.sql                 # Migrasi database bertahap
-│   ├── .env.example              # Contoh konfigurasi backend
+│   │   ├── config/           # Konfigurasi CORS
+│   │   ├── middleware/       # JWT auth dan role guard
+│   │   ├── routes/           # Auth, users, apps, dan activity logs
+│   │   ├── audit.js          # Helper pencatatan audit log
+│   │   ├── db.js             # MySQL connection pool
+│   │   └── server.js         # Bootstrap Express
+│   ├── supabase/             # Migrasi legacy/reference Supabase
 │   └── package.json
 ├── frontend/
-│   ├── public/                   # Gambar, logo, dan favicon
+│   ├── public/               # Asset publik
 │   ├── src/
-│   │   ├── assets/               # Aset frontend
-│   │   ├── components/           # Komponen UI
-│   │   ├── context/              # State aplikasi dan sesi pengguna
-│   │   ├── layouts/              # Layout halaman
-│   │   ├── pages/                # Landing, login, dashboard, profil, dan lainnya
-│   │   ├── App.jsx               # Routing utama
-│   │   └── api.js                # Klien HTTP untuk backend
-│   ├── index.html
+│   │   ├── components/       # Komponen UI
+│   │   ├── context/          # State user, aplikasi, tema, dan session
+│   │   ├── layouts/          # Layout dashboard
+│   │   ├── pages/            # Landing, auth, dashboard, profile, settings
+│   │   ├── api.js            # Axios instance dan token interceptor
+│   │   └── App.jsx           # Routing utama
 │   ├── vite.config.js
 │   └── package.json
-├── Readme/                       # Dokumentasi pendukung
-├── deploy.md                     # Catatan deployment
+├── backup.sql                # Referensi backup database
+├── deploy.md                 # Panduan deployment Vercel
 └── README.md
 ```
 
-## Cara Menjalankan Proyek
+## Prasyarat
 
-### Persyaratan
+- Git.
+- Node.js `20.x` atau lebih baru.
+- npm `10.x` atau lebih baru.
+- MySQL `8.x` atau kompatibel.
+- Terminal PowerShell, Command Prompt, atau shell Linux/macOS.
 
-- Node.js versi 20 atau lebih baru.
-- npm versi 10 atau lebih baru.
-- Project Supabase aktif dengan URL dan API key yang diperlukan.
+## Clone Repository
 
-### 1. Siapkan database Supabase
+Ganti `<URL_REPOSITORY>` dengan URL Git repository proyek:
 
-Untuk database baru, jalankan `backend/supabase/full_schema_setup.sql` melalui **SQL Editor** di dashboard Supabase. Jika database sudah menggunakan skema proyek ini, terapkan hanya migrasi `backend/supabase/*.sql` yang belum dijalankan, sesuai urutannya. Jangan jalankan skrip skema lengkap dan seluruh migrasi sekaligus pada database yang sudah terpasang.
+```bash
+git clone <URL_REPOSITORY>
+cd Portal-Cabdiswilayah1
+```
 
-### 2. Konfigurasikan dan jalankan backend
+Contoh GitHub:
 
-Dari direktori root proyek, buka terminal:
+```bash
+git clone https://github.com/USERNAME/Portal-Cabdiswilayah1.git
+cd Portal-Cabdiswilayah1
+```
 
-```powershell
+## Setup Database MySQL
+
+1. Buat database kosong:
+
+```sql
+CREATE DATABASE portal_cabdiswilayah1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+2. Impor skema MySQL proyek (`database.sql`) atau skema/backup database yang digunakan.
+3. Jika tabel token reset password belum tersedia, jalankan migrasi:
+
+```bash
+mysql -u root -p portal_cabdiswilayah1 < backend/mysql/002_create_password_reset_tokens.sql
+```
+
+4. Jalankan migrasi akun sekolah:
+
+```bash
+mysql -u root -p portal_cabdiswilayah1 < backend/mysql/003_add_school_accounts.sql
+```
+
+5. Jalankan migrasi proteksi login dan sesi:
+
+```bash
+mysql -u root -p portal_cabdiswilayah1 < backend/mysql/004_create_login_protection.sql
+```
+
+6. Pastikan tabel berikut tersedia:
+
+   - `users`
+   - `applications`
+   - `user_application_access`
+   - `activity_logs`
+   - `schools`
+   - `school_application_access`
+   - `school_email_verification_tokens`
+   - `login_ip_attempts`
+   - `auth_sessions`
+
+> `backend/supabase/` adalah migrasi legacy/reference. Runtime backend saat ini memakai MySQL dari `backend/src/db.js`.
+
+Login staf dan sekolah diblokir selama 10 menit setelah 5 kegagalan login dari
+IP yang sama. Sesi berakhir setelah 10 menit tanpa aktivitas (maksimal 24 jam).
+Jika menggunakan reverse proxy, atur `TRUST_PROXY` hanya sesuai konfigurasi proxy
+yang dipercaya agar IP klien tidak dapat dipalsukan.
+
+## Konfigurasi Backend
+
+```bash
 cd backend
-Copy-Item .env.example .env
 npm install
 ```
 
-Isi `backend/.env` dengan kredensial project Supabase:
+Buat file `backend/.env`:
 
 ```env
 PORT=3000
+JWT_SECRET=ganti-dengan-secret-acak-minimal-32-karakter
 FRONTEND_URL=http://localhost:5173
-SUPABASE_URL=https://<project-id>.supabase.co
-SUPABASE_ANON_KEY=<supabase-anon-key>
-SUPABASE_SERVICE_ROLE_KEY=<supabase-service-role-key>
-JWT_SECRET=<secret-acak-yang-kuat>
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASS=password_mysql_anda
+DB_NAME=portal_cabdiswilayah1
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=akun-smtp
+SMTP_PASS=password-smtp
+SMTP_FROM="Portal Cabdiswilayah I <no-reply@example.com>"
 ```
 
-Jangan gunakan service role key di frontend atau commit file `.env` ke repository. `JWT_SECRET` perlu berupa nilai rahasia yang kuat dan unik, terutama untuk token login sekolah.
+Konfigurasi SMTP diperlukan untuk verifikasi email sekolah dan reset password. Jangan commit file `.env` atau memasukkan password/database secret ke repository.
 
-Jalankan server backend:
+Jalankan backend:
 
 ```bash
 npm run dev
 ```
 
-API berjalan pada `http://localhost:3000`. Perintah produksi lokal tersedia melalui `npm start`.
+API tersedia di `http://localhost:3000`.
 
-### 3. Konfigurasikan dan jalankan frontend
+## Konfigurasi Frontend
 
-Buka terminal baru dari direktori root proyek:
+Buka terminal baru dari root project:
 
-```powershell
+```bash
 cd frontend
 npm install
 ```
 
-Buat `frontend/.env` dan atur URL backend:
+Buat file `frontend/.env`:
 
 ```env
 VITE_API_URL=http://localhost:3000
@@ -127,20 +199,109 @@ Jalankan frontend:
 npm run dev
 ```
 
-Buka alamat yang ditampilkan Vite, biasanya [http://localhost:5173](http://localhost:5173).
+Buka URL Vite, biasanya `http://localhost:5173`.
 
-### Perintah Pengembangan
+## Menjalankan Keduanya
 
-Jalankan perintah dari direktori masing-masing (`backend` atau `frontend`).
+Gunakan dua terminal:
 
-| Direktori | Perintah | Keterangan |
-| --- | --- | --- |
-| `backend` | `npm run dev` | Menjalankan API dengan pemantauan perubahan source. |
-| `backend` | `npm start` | Menjalankan API. |
-| `backend` | `npm run seed` | Menjalankan skrip seed pengguna. |
-| `frontend` | `npm run dev` | Menjalankan server pengembangan Vite. |
-| `frontend` | `npm run build` | Membuat build produksi di `frontend/dist`. |
-| `frontend` | `npm run preview` | Meninjau build produksi secara lokal. |
-| `frontend` | `npm run lint` | Memeriksa kode dengan Oxlint. |
+```text
+Terminal 1: cd backend  && npm run dev
+Terminal 2: cd frontend && npm run dev
+```
+
+Frontend membaca API dari `VITE_API_URL`. Backend harus mengizinkan origin frontend melalui `FRONTEND_URL`.
+
+## Role dan Hak Akses
+
+| Role | Hak akses |
+| --- | --- |
+| `superadmin` / `super_user` | Akses semua aplikasi, kelola aplikasi, user, role, hak akses, dan audit log. |
+| `admin` | Upload aplikasi, melihat katalog, serta menyetujui atau menolak pendaftaran staff. |
+| `staff` / `medium_user` | Membuka aplikasi yang ditugaskan dan mengirim dokumen melalui aplikasi tersebut. |
+| `school_user` | Login dengan NPSN; setelah email diverifikasi dan akun disetujui, hanya membuka aplikasi yang ditugaskan. |
+
+Pendaftaran publik selalu menghasilkan akun `staff` dengan status `pending`. Role `admin` hanya dapat diberikan oleh superadmin.
+
+## Endpoint Utama
+
+Endpoint terproteksi memakai header:
+
+```http
+Authorization: Bearer <jwt_token>
+```
+
+### Auth
+
+- `POST /auth/register` - registrasi staff publik.
+- `POST /auth/login` - login dan mendapatkan JWT.
+- `PATCH /auth/profile` - mengubah nama lengkap user aktif.
+- `POST /auth/reset-password` - ganti password dengan validasi password lama.
+- `GET /auth/me` - mengambil data user aktif.
+- `POST /auth/logout` - logout stateless.
+- `POST /auth/school-login` - membuat sesi sekolah dengan NPSN dan password.
+- `POST /auth/school/request-link` - mengirim tautan verifikasi ke email sekolah.
+- `POST /auth/school/verify` - memverifikasi email sekolah menggunakan token sekali pakai.
+
+### Aplikasi
+
+- `GET /api/apps` - katalog sesuai role/akses user.
+- `GET /api/apps/:id/redirect` - memvalidasi akses dan mengembalikan URL aplikasi.
+- `POST /api/apps` - upload aplikasi oleh admin/superadmin.
+- `PATCH /api/apps/:id` - edit aplikasi oleh superadmin.
+- `DELETE /api/apps/:id` - hapus aplikasi oleh superadmin.
+
+### User dan Audit
+
+- `GET /api/users` - daftar user untuk admin/superadmin.
+- `PATCH /api/users/:id/approve` - menyetujui user baru.
+- `PATCH /api/users/:id/reject` - menolak user baru.
+- `PATCH /api/users/:id/role` - mengubah role menjadi `admin` atau `staff`, khusus superadmin.
+- `PUT /api/users/:id/app-access` - mengatur akses aplikasi, khusus superadmin.
+- `GET /api/activity-logs` - melihat audit log, khusus superadmin.
+- `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`, dan `DELETE /api/schools/:npsn` - mengelola akun sekolah oleh superadmin.
+- `PUT /api/schools/:npsn/app-access` - mengatur aplikasi yang dapat diakses sekolah.
+
+## Perintah Development
+
+### Backend
+
+| Perintah | Fungsi |
+| --- | --- |
+| `npm run dev` | Menjalankan API dengan Nodemon. |
+| `npm start` | Menjalankan API mode normal/production. |
+
+### Frontend
+
+| Perintah | Fungsi |
+| --- | --- |
+| `npm run dev` | Menjalankan Vite dengan hot reload. |
+| `npm run build` | Memeriksa dan membuat bundle production. |
+| `npm run preview` | Menjalankan preview hasil build. |
+| `npm run lint` | Menjalankan Oxlint. |
+
+Sebelum membuat pull request:
+
+```bash
+cd frontend
+npm run lint
+npm run build
+
+cd ../backend
+node --check src/server.js
+```
+
+## Deployment
+
+Deployment frontend dan backend direkomendasikan sebagai dua project Vercel:
+
+1. Deploy folder `backend` sebagai API.
+2. Atur environment variable MySQL, `JWT_SECRET`, dan `FRONTEND_URL` di Vercel.
+3. Deploy folder `frontend` dengan `VITE_API_URL` mengarah ke URL backend.
+4. Pastikan CORS backend mengizinkan domain frontend production.
+
+Panduan detail tersedia di [deploy.md](deploy.md).
+
+## Lisensi
 
 Hak Cipta © Cabang Dinas Pendidikan Wilayah 1 Sumatera Utara.

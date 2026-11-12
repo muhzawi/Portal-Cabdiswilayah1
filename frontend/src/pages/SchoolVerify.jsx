@@ -6,17 +6,18 @@ import Logo from "../components/ui/Logo";
 import api from "../api";
 
 export default function SchoolVerify() {
-  const [message, setMessage] = useState("Memverifikasi email sekolah...");
-  const [isError, setIsError] = useState(false);
+  const token = new URLSearchParams(window.location.search).get("token");
+  const [message, setMessage] = useState(
+    token
+      ? "Memverifikasi email sekolah..."
+      : "Tautan verifikasi tidak valid atau sudah kedaluwarsa.",
+  );
+  const [isError, setIsError] = useState(!token);
   const { completeSchoolLogin } = useApp();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.hash.slice(1));
-    const token = params.get("access_token");
     if (!token) {
-      setMessage("Tautan verifikasi tidak valid atau sudah kedaluwarsa.");
-      setIsError(true);
       return;
     }
     api
@@ -37,7 +38,7 @@ export default function SchoolVerify() {
         );
         setIsError(true);
       });
-  }, [completeSchoolLogin, navigate]);
+  }, [completeSchoolLogin, navigate, token]);
 
   return (
     <div className="auth-page">

@@ -7,12 +7,14 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import SchoolVerify from "./pages/SchoolVerify";
 import Register from "./pages/Register";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
 import ApplicationDetail from "./pages/ApplicationDetail";
 import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
 import SettingsPage from "./pages/SettingsPage";
+import ActivityLogs from "./pages/ActivityLogs";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 function ProtectedApp() {
@@ -26,6 +28,7 @@ function ProtectedApp() {
           <Route path="/profile" element={<Profile />} />
           <Route path="profile/edit" element={<EditProfile />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/activity-logs" element={<ActivityLogs />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </DashboardLayout>
@@ -42,6 +45,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/school/verify" element={<SchoolVerify />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/*" element={<ProtectedApp />} />
         </Routes>
       </AppProvider>

@@ -12,8 +12,19 @@ function readStorage(key, fallback) {
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
 
+function normalizeRole(role) {
+  if (role === "superadmin") return "super_user";
+  if (role === "staff") return "medium_user";
+  return role;
+}
+
 export function AppProvider({ children }) {
-  const [user, setUser] = useState(() => readStorage("portal_user", null));
+  const [user, setUser] = useState(() => {
+    const storedUser = readStorage("portal_user", null);
+    return storedUser
+      ? { ...storedUser, role: normalizeRole(storedUser.role) }
+      : null;
+  });
   const [favorites, setFavorites] = useState(() => readStorage("portal_favorites", []));
   const [recent, setRecent] = useState(() => readStorage("portal_recent_apps", []));
   const [apps, setApps] = useState([]);
@@ -25,18 +36,19 @@ export function AppProvider({ children }) {
   const login = async (email, password) => {
     try {
       const res = await api.post('/auth/login', { email, password });
-      const { user: userData, session } = res.data;
+      const { user: userData, token } = res.data;
 
       const nextUser = {
         id: userData.id,
-        name: userData.profile?.full_name || email.split("@")[0],
+        name: userData.full_name || userData.name || email.split("@")[0],
         email: userData.email,
-        role: userData.profile?.role,
-        institution: userData.profile?.institution || "",
-        nip: userData.profile?.nip || "",
+        role: normalizeRole(userData.role),
+        status: userData.status,
+        institution: userData.institution || "",
+        nip: userData.nip || "",
       };
 
-      localStorage.setItem('portal_token', session.access_token);
+      localStorage.setItem('portal_token', token);
       setUser(nextUser);
       persist("portal_user", nextUser);
       return { success: true };
@@ -46,21 +58,34 @@ export function AppProvider({ children }) {
   };
 
   const completeSchoolLogin = useCallback((userData, session) => {
-    const nextUser = { id: userData.id, npsn: userData.npsn, name: userData.name, role: "school_user", type: "school", institution: userData.name, status: userData.status };
+    const nextUser = {
+      id: userData.id,
+      npsn: userData.npsn,
+      name: userData.name,
+      email: userData.email,
+      role: "school_user",
+      type: "school",
+      institution: userData.name,
+      status: userData.status,
+      emailVerified: Boolean(userData.emailVerified),
+    };
     localStorage.setItem("portal_token", session.access_token);
     setUser(nextUser);
     persist("portal_user", nextUser);
   }, []);
 
-  const logout = async () => {
-    try {
-      await api.post('/auth/logout');
-    } catch (_e) { } // ignore error on logout
+  const logout = useCallback(() => {
+    const token = localStorage.getItem("portal_token");
     setUser(null);
     localStorage.removeItem("portal_user");
     localStorage.removeItem("portal_token");
     setApps([]);
-  };
+    if (token) {
+      api
+        .post("/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } })
+        .catch(() => {});
+    }
+  }, []);
 
   const refreshApps = async () => {
     if (user) {
@@ -86,7 +111,29 @@ export function AppProvider({ children }) {
         })
         .finally(() => setIsLoadingApps(false));
     }
-  }, [user]);
+  }, [user, logout]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+
+    let timeoutId;
+    const resetInactivityTimer = () => {
+      window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(logout, 10 * 60 * 1000);
+    };
+    const activityEvents = ["pointerdown", "pointermove", "keydown", "scroll", "touchstart"];
+    activityEvents.forEach((eventName) =>
+      window.addEventListener(eventName, resetInactivityTimer, { passive: true }),
+    );
+    resetInactivityTimer();
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      activityEvents.forEach((eventName) =>
+        window.removeEventListener(eventName, resetInactivityTimer),
+      );
+    };
+  }, [user, logout]);
 
   const toggleFavorite = (id) => {
     const next = favorites.includes(id)

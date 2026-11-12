@@ -1,0 +1,6 @@
+ALTER TABLE users
+  ADD COLUMN institution VARCHAR(255) NOT NULL DEFAULT '' AFTER email,
+  ADD COLUMN nip VARCHAR(50) NOT NULL DEFAULT '' AFTER institution;
+
+ALTER TABLE applications
+  ADD COLUMN icon_url MEDIUMTEXT NULL AFTER url;
