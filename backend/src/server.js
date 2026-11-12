@@ -14,6 +14,12 @@ import activityRoutes from "./routes/activity.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
+if (process.env.TRUST_PROXY) {
+  const trustProxy = /^\d+$/.test(process.env.TRUST_PROXY)
+    ? Number(process.env.TRUST_PROXY)
+    : process.env.TRUST_PROXY.split(",").map((value) => value.trim());
+  app.set("trust proxy", trustProxy);
+}
 
 app.use(helmet());
 app.use(corsMiddleware);

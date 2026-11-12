@@ -24,6 +24,7 @@ function Login() {
 
   // State Login Sekolah
   const [npsn, setNpsn] = useState("");
+  const [schoolPassword, setSchoolPassword] = useState("");
 
   // State Login Admin / Pegawai
   const [rememberMe, setRememberMe] = useState(() => {
@@ -55,15 +56,21 @@ function Login() {
     if (!/^\d{8}$/.test(cleanNpsn)) {
       return setError("NPSN harus berupa 8 digit angka.");
     }
+    if (!schoolPassword) {
+      return setError("Password sekolah wajib diisi.");
+    }
     setIsLoading(true);
     setError("");
     try {
-      const response = await api.post("/auth/school-login", { npsn: cleanNpsn });
+      const response = await api.post("/auth/school-login", {
+        npsn: cleanNpsn,
+        password: schoolPassword,
+      });
       localStorage.setItem("portal_token", response.data.session.access_token);
       localStorage.setItem("portal_user", JSON.stringify(response.data.user));
       window.location.assign("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.error || "Gagal mengirim tautan verifikasi.");
+      setError(err.response?.data?.error || "Login sekolah gagal.");
     } finally {
       setIsLoading(false);
     }
@@ -198,7 +205,7 @@ function Login() {
               <div className="auth-info-box">
                 <Info size={18} style={{ flexShrink: 0, marginTop: 2 }} />
                 <span>
-                  Masukkan NPSN untuk masuk. Setelah itu, tambahkan email sekolah di dashboard untuk verifikasi.
+                  Masuk menggunakan NPSN dan password yang diberikan administrator.
                 </span>
               </div>
 
@@ -218,6 +225,18 @@ function Login() {
                 />
               </label>
 
+              <label>
+                Password
+                <input
+                  type="password"
+                  value={schoolPassword}
+                  onChange={(e) => setSchoolPassword(e.target.value)}
+                  placeholder="Masukkan password sekolah"
+                  autoComplete="current-password"
+                  required
+                />
+              </label>
+
               {error && <div className="form-error">{error}</div>}
 
               <Button
@@ -226,7 +245,7 @@ function Login() {
                 style={{ marginTop: "8px" }}
               >
                 {isLoading ? (
-                  "Memeriksa..."
+                  "Memproses..."
                 ) : (
                   <>
                     Masuk sebagai Sekolah <ArrowRight size={17} />

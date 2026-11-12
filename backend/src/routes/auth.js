@@ -1,10 +1,16 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { createHash, randomBytes } from "node:crypto";
 import db from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import { writeAuditLog } from "../audit.js";
+import { createAuthSessionToken } from "../security/auth-sessions.js";
+import {
+  clearLoginFailures,
+  getClientIp,
+  isLoginIpBlocked,
+  recordFailedLogin,
+} from "../security/login-protection.js";
 import {
   isSmtpConfigured,
   sendPasswordResetEmail,
@@ -12,7 +18,6 @@ import {
 } from "../email.js";
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 const genericResetResponse = {
   message: "Jika email terdaftar, instruksi reset password akan dikirim.",
 };
@@ -115,7 +120,7 @@ router.post("/signup", async (req, res, next) => {
     await writeAuditLog({ actorId: userId, action: "user_registered", targetId: userId, details: { role: targetRole } });
 
     const user = { id: userId, full_name: name, email: cleanEmail, role: targetRole, status };
-    const token = jwt.sign(user, JWT_SECRET, { expiresIn: "1d" });
+    const token = await createAuthSessionToken(user, "user", userId);
 
     res.status(201).json({ token, user });
   } catch (error) {
@@ -169,27 +174,44 @@ router.post("/register", async (req, res, next) => {
 
 router.post("/school-login", async (req, res, next) => {
   try {
+    const clientIp = getClientIp(req);
+    if (await isLoginIpBlocked(clientIp)) {
+      return res.status(429).json({
+        error: "Terlalu banyak percobaan login gagal. IP diblokir selama 10 menit.",
+      });
+    }
+
     const npsn = typeof req.body.npsn === "string" ? req.body.npsn.trim() : "";
+    const password = typeof req.body.password === "string" ? req.body.password : "";
     if (!/^\d{8}$/.test(npsn)) {
       return res.status(400).json({ error: "NPSN harus berupa 8 digit angka." });
     }
+    if (!password) {
+      return res.status(400).json({ error: "NPSN dan password wajib diisi." });
+    }
 
     const [rows] = await db.query(
-      "SELECT npsn, name, status, email, email_verified_at FROM schools WHERE npsn = ?",
+      "SELECT npsn, name, password_hash, status, email, email_verified_at FROM schools WHERE npsn = ?",
       [npsn],
     );
     const school = rows[0];
-    if (!school) {
-      return res.status(404).json({ error: "NPSN belum terdaftar. Hubungi administrator." });
+    if (!school || !(await bcrypt.compare(password, school.password_hash))) {
+      const blocked = await recordFailedLogin(clientIp);
+      return res.status(blocked ? 429 : 401).json({
+        error: blocked
+          ? "Terlalu banyak percobaan login gagal. IP diblokir selama 10 menit."
+          : "NPSN atau password salah.",
+      });
     }
+    await clearLoginFailures(clientIp);
     if (school.status === "rejected") {
       return res.status(403).json({ error: "Akun sekolah ditolak. Hubungi administrator." });
     }
 
-    const token = jwt.sign(
+    const token = await createAuthSessionToken(
       { npsn: school.npsn, name: school.name, role: "school_user", type: "school" },
-      JWT_SECRET,
-      { expiresIn: "24h" },
+      "school",
+      school.npsn,
     );
     res.json({
       session: { access_token: token },
@@ -351,10 +373,10 @@ router.post("/school/verify", async (req, res, next) => {
       return res.status(403).json({ error: "Akses sekolah belum disetujui admin." });
     }
 
-    const token = jwt.sign(
+    const token = await createAuthSessionToken(
       { npsn: school.npsn, name: school.name, role: "school_user", type: "school" },
-      JWT_SECRET,
-      { expiresIn: "24h" },
+      "school",
+      school.npsn,
     );
     res.json({
       session: { access_token: token },
@@ -380,8 +402,15 @@ router.post("/school/verify", async (req, res, next) => {
 // POST /auth/login
 router.post("/login", async (req, res, next) => {
   try {
+    const clientIp = getClientIp(req);
+    if (await isLoginIpBlocked(clientIp)) {
+      return res.status(429).json({
+        error: "Terlalu banyak percobaan login gagal. IP diblokir selama 10 menit.",
+      });
+    }
+
     const { email, password } = req.body;
-    if (!email || !password) {
+    if (typeof email !== "string" || !email.trim() || typeof password !== "string" || !password) {
       return res.status(400).json({ error: "Email dan password wajib diisi." });
     }
 
@@ -390,8 +419,14 @@ router.post("/login", async (req, res, next) => {
     const user = rows[0];
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ error: "Email atau password salah." });
+      const blocked = await recordFailedLogin(clientIp);
+      return res.status(blocked ? 429 : 401).json({
+        error: blocked
+          ? "Terlalu banyak percobaan login gagal. IP diblokir selama 10 menit."
+          : "Email atau password salah.",
+      });
     }
+    await clearLoginFailures(clientIp);
 
     if (user.status === "pending") {
       return res.status(403).json({
@@ -405,7 +440,7 @@ router.post("/login", async (req, res, next) => {
       });
     }
 
-    const token = jwt.sign(
+    const token = await createAuthSessionToken(
       {
         id: user.id,
         email: user.email,
@@ -415,8 +450,8 @@ router.post("/login", async (req, res, next) => {
         institution: user.institution || "",
         nip: user.nip || "",
       },
-      JWT_SECRET,
-      { expiresIn: "1d" }
+      "user",
+      user.id,
     );
 
     await writeAuditLog({ actorId: user.id, action: "login" });
@@ -515,9 +550,13 @@ router.post("/reset-password", requireAuth, async (req, res, next) => {
   }
 });
 
-// POST /auth/logout (Stateless JWT Logout)
-router.post("/logout", requireAuth, (_req, res) => {
-  res.status(200).json({ message: "Logout berhasil." });
+router.post("/logout", requireAuth, async (req, res, next) => {
+  try {
+    await db.query("DELETE FROM auth_sessions WHERE id = ?", [req.authSessionId]);
+    res.status(200).json({ message: "Logout berhasil." });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // PATCH /auth/profile (Ubah data profil dasar)

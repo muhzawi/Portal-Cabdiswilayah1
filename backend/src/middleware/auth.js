@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import db from "../db.js";
-
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+import { JWT_SECRET } from "../config/jwt.js";
 
 export const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -18,7 +17,26 @@ export const requireAuth = async (req, res, next) => {
   }
 
   try {
-    if (decoded.type === "school" && typeof decoded.npsn === "string") {
+    const isSchool = decoded.type === "school";
+    const subjectId = isSchool ? decoded.npsn : decoded.id;
+    if (typeof decoded.sid !== "string" || typeof subjectId !== "string") {
+      return res.status(401).json({ error: "Sesi tidak valid. Silakan masuk kembali." });
+    }
+
+    const [sessionResult] = await db.query(
+      `UPDATE auth_sessions
+       SET last_activity_at = GREATEST(NOW(6), DATE_ADD(last_activity_at, INTERVAL 1 MICROSECOND))
+       WHERE id = ? AND subject_type = ? AND subject_id = ?
+         AND last_activity_at >= DATE_SUB(NOW(6), INTERVAL 10 MINUTE)
+         AND expires_at > NOW()`,
+      [decoded.sid, isSchool ? "school" : "user", subjectId],
+    );
+    if (sessionResult.affectedRows === 0) {
+      return res.status(401).json({ error: "Sesi berakhir karena tidak aktif. Silakan masuk kembali." });
+    }
+    req.authSessionId = decoded.sid;
+
+    if (isSchool) {
       const [schools] = await db.query(
         "SELECT npsn, name, email, status, email_verified_at FROM schools WHERE npsn = ?",
         [decoded.npsn],

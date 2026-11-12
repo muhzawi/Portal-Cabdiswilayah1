@@ -74,15 +74,18 @@ export function AppProvider({ children }) {
     persist("portal_user", nextUser);
   }, []);
 
-  const logout = async () => {
-    try {
-      await api.post('/auth/logout');
-    } catch (_e) { } // ignore error on logout
+  const logout = useCallback(() => {
+    const token = localStorage.getItem("portal_token");
     setUser(null);
     localStorage.removeItem("portal_user");
     localStorage.removeItem("portal_token");
     setApps([]);
-  };
+    if (token) {
+      api
+        .post("/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } })
+        .catch(() => {});
+    }
+  }, []);
 
   const refreshApps = async () => {
     if (user) {
@@ -108,7 +111,29 @@ export function AppProvider({ children }) {
         })
         .finally(() => setIsLoadingApps(false));
     }
-  }, [user]);
+  }, [user, logout]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+
+    let timeoutId;
+    const resetInactivityTimer = () => {
+      window.clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(logout, 10 * 60 * 1000);
+    };
+    const activityEvents = ["pointerdown", "pointermove", "keydown", "scroll", "touchstart"];
+    activityEvents.forEach((eventName) =>
+      window.addEventListener(eventName, resetInactivityTimer, { passive: true }),
+    );
+    resetInactivityTimer();
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      activityEvents.forEach((eventName) =>
+        window.removeEventListener(eventName, resetInactivityTimer),
+      );
+    };
+  }, [user, logout]);
 
   const toggleFavorite = (id) => {
     const next = favorites.includes(id)

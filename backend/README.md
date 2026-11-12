@@ -9,21 +9,31 @@ Role yang digunakan:
 - `medium_user`: hanya dapat mengakses aplikasi yang ada di
   `user_application_access`.
 - `school_user`: login menggunakan NPSN, lalu hanya dapat mengakses aplikasi
-  yang ditugaskan setelah email diverifikasi dan akun disetujui.
+  dengan password yang diberikan administrator; akses aplikasi memerlukan
+  email terverifikasi dan persetujuan admin.
 
 ## Menjalankan
 
 1. Buat database MySQL, lalu jalankan `database.sql` dari root repo untuk instalasi baru.
 2. Atur `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_NAME`, dan `JWT_SECRET` di `backend/.env`.
+   `JWT_SECRET` wajib berisi minimal 32 karakter acak; server tidak akan berjalan
+   jika nilainya tidak dikonfigurasi dengan benar.
 3. Untuk database baru yang dibuat dari `database.sql`, jalankan
   `mysql/002_create_password_reset_tokens.sql`. Untuk database lama yang belum
   memiliki kolom profil/ikon, jalankan `mysql/001_add_profile_and_app_icons.sql`
   sekali sebelum migrasi `002`.
 4. Jalankan `mysql/003_add_school_accounts.sql` untuk menambahkan akun sekolah
    dan token verifikasi email.
-5. Isi konfigurasi SMTP di bawah ini untuk mengaktifkan reset password dan
+5. Jalankan `mysql/004_create_login_protection.sql` untuk tabel blokir IP dan sesi.
+6. Isi konfigurasi SMTP di bawah ini untuk mengaktifkan reset password dan
    verifikasi email sekolah.
-6. Jalankan `npm install` dan `npm run dev` dari folder `backend`.
+7. Jalankan `npm install` dan `npm run dev` dari folder `backend`.
+
+Login staf dan sekolah diblokir selama 10 menit setelah 5 kegagalan dari IP yang
+sama. Sesi berakhir setelah 10 menit tanpa aktivitas dan maksimal 24 jam.
+Jika aplikasi berjalan di belakang reverse proxy, atur `TRUST_PROXY` hanya
+untuk jumlah hop atau alamat proxy yang benar agar alamat IP klien tidak dapat
+dipalsukan melalui header.
 
 Endpoint utama:
 
@@ -35,7 +45,7 @@ Endpoint utama:
 - `GET /api/activity-logs` (superadmin)
 - `GET /api/apps`, `GET /api/apps/:id`, `GET /api/apps/:id/redirect`
 - `POST /api/apps` (admin/superadmin), `PATCH /api/apps/:id` dan `DELETE /api/apps/:id` (superadmin)
-- `POST /auth/school-login`, `POST /auth/school/request-link`, dan
+- `POST /auth/school-login` (NPSN dan password), `POST /auth/school/request-link`, dan
   `POST /auth/school/verify` untuk login serta verifikasi email sekolah
 - `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`,
   `DELETE /api/schools/:npsn`, dan

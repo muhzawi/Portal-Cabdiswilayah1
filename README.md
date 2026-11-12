@@ -117,7 +117,13 @@ mysql -u root -p portal_cabdiswilayah1 < backend/mysql/002_create_password_reset
 mysql -u root -p portal_cabdiswilayah1 < backend/mysql/003_add_school_accounts.sql
 ```
 
-5. Pastikan tabel berikut tersedia:
+5. Jalankan migrasi proteksi login dan sesi:
+
+```bash
+mysql -u root -p portal_cabdiswilayah1 < backend/mysql/004_create_login_protection.sql
+```
+
+6. Pastikan tabel berikut tersedia:
 
    - `users`
    - `applications`
@@ -126,8 +132,15 @@ mysql -u root -p portal_cabdiswilayah1 < backend/mysql/003_add_school_accounts.s
    - `schools`
    - `school_application_access`
    - `school_email_verification_tokens`
+   - `login_ip_attempts`
+   - `auth_sessions`
 
 > `backend/supabase/` adalah migrasi legacy/reference. Runtime backend saat ini memakai MySQL dari `backend/src/db.js`.
+
+Login staf dan sekolah diblokir selama 10 menit setelah 5 kegagalan login dari
+IP yang sama. Sesi berakhir setelah 10 menit tanpa aktivitas (maksimal 24 jam).
+Jika menggunakan reverse proxy, atur `TRUST_PROXY` hanya sesuai konfigurasi proxy
+yang dipercaya agar IP klien tidak dapat dipalsukan.
 
 ## Konfigurasi Backend
 
@@ -140,7 +153,7 @@ Buat file `backend/.env`:
 
 ```env
 PORT=3000
-JWT_SECRET=ganti-dengan-secret-yang-kuat
+JWT_SECRET=ganti-dengan-secret-acak-minimal-32-karakter
 FRONTEND_URL=http://localhost:5173
 DB_HOST=localhost
 DB_PORT=3306
@@ -226,7 +239,7 @@ Authorization: Bearer <jwt_token>
 - `POST /auth/reset-password` - ganti password dengan validasi password lama.
 - `GET /auth/me` - mengambil data user aktif.
 - `POST /auth/logout` - logout stateless.
-- `POST /auth/school-login` - membuat sesi onboarding sekolah dengan NPSN.
+- `POST /auth/school-login` - membuat sesi sekolah dengan NPSN dan password.
 - `POST /auth/school/request-link` - mengirim tautan verifikasi ke email sekolah.
 - `POST /auth/school/verify` - memverifikasi email sekolah menggunakan token sekali pakai.
 
