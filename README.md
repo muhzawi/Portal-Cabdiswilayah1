@@ -123,7 +123,18 @@ mysql -u root -p portal_cabdiswilayah1 < backend/mysql/003_add_school_accounts.s
 mysql -u root -p portal_cabdiswilayah1 < backend/mysql/004_create_login_protection.sql
 ```
 
-6. Pastikan tabel berikut tersedia:
+6. Jalankan migrasi kode login sekolah:
+
+```bash
+mysql -u root -p portal_cabdiswilayah1 < backend/mysql/005_create_school_login_codes.sql
+```
+
+Pastikan setiap sekolah memiliki email pada kolom `schools.email`. Sekolah yang
+belum memiliki email harus dibantu admin memperbarui datanya sebelum dapat
+menerima kode login. Saat mengganti email sekolah secara manual, kosongkan juga
+`email_verified_at`; kode OTP pertama ke email tersebut akan memverifikasinya.
+
+7. Pastikan tabel berikut tersedia:
 
    - `users`
    - `applications`
@@ -132,13 +143,15 @@ mysql -u root -p portal_cabdiswilayah1 < backend/mysql/004_create_login_protecti
    - `schools`
    - `school_application_access`
    - `school_email_verification_tokens`
+   - `school_login_codes`
    - `login_ip_attempts`
    - `auth_sessions`
 
 > `backend/supabase/` adalah migrasi legacy/reference. Runtime backend saat ini memakai MySQL dari `backend/src/db.js`.
 
-Login staf dan sekolah diblokir selama 10 menit setelah 5 kegagalan login dari
-IP yang sama. Sesi berakhir setelah 10 menit tanpa aktivitas (maksimal 24 jam).
+Kode login sekolah berlaku 5 menit dan dapat dicoba maksimal 5 kali. Login staf
+dan sekolah diblokir selama 10 menit setelah 5 kegagalan login dari IP yang sama.
+Sesi berakhir setelah 10 menit tanpa aktivitas (maksimal 24 jam).
 Jika menggunakan reverse proxy, atur `TRUST_PROXY` hanya sesuai konfigurasi proxy
 yang dipercaya agar IP klien tidak dapat dipalsukan.
 
@@ -239,7 +252,8 @@ Authorization: Bearer <jwt_token>
 - `POST /auth/reset-password` - ganti password dengan validasi password lama.
 - `GET /auth/me` - mengambil data user aktif.
 - `POST /auth/logout` - logout stateless.
-- `POST /auth/school-login` - membuat sesi sekolah dengan NPSN dan password.
+- `POST /auth/school-login` - mengirim kode login ke email terdaftar menggunakan NPSN.
+- `POST /auth/school-login/verify` - memverifikasi kode login sekolah dan membuat sesi.
 - `POST /auth/school/request-link` - mengirim tautan verifikasi ke email sekolah.
 - `POST /auth/school/verify` - memverifikasi email sekolah menggunakan token sekali pakai.
 
@@ -259,7 +273,7 @@ Authorization: Bearer <jwt_token>
 - `PATCH /api/users/:id/role` - mengubah role menjadi `admin` atau `staff`, khusus superadmin.
 - `PUT /api/users/:id/app-access` - mengatur akses aplikasi, khusus superadmin.
 - `GET /api/activity-logs` - melihat audit log, khusus superadmin.
-- `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`, dan `DELETE /api/schools/:npsn` - mengelola akun sekolah oleh superadmin.
+- `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`, dan `DELETE /api/schools/:npsn` - mengelola akun sekolah oleh superadmin. Pembuatan menerima NPSN, nama, dan email sekolah, lalu mengirim pemberitahuan akun dibuat.
 - `PUT /api/schools/:npsn/app-access` - mengatur aplikasi yang dapat diakses sekolah.
 
 ## Perintah Development

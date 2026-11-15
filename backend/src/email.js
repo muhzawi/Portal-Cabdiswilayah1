@@ -11,17 +11,21 @@ export function isSmtpConfigured() {
   return Boolean(smtpHost && smtpFrom && !hasPartialAuth);
 }
 
-export async function sendPasswordResetEmail({ to, fullName, resetUrl }) {
-  if (!isSmtpConfigured()) {
-    throw new Error("SMTP belum dikonfigurasi.");
-  }
-
-  const transporter = nodemailer.createTransport({
+function createSmtpTransport() {
+  return nodemailer.createTransport({
     host: smtpHost,
     port: smtpPort,
     secure: process.env.SMTP_SECURE === "true" || smtpPort === 465,
     ...(smtpUser && smtpPass ? { auth: { user: smtpUser, pass: smtpPass } } : {}),
   });
+}
+
+export async function sendPasswordResetEmail({ to, fullName, resetUrl }) {
+  if (!isSmtpConfigured()) {
+    throw new Error("SMTP belum dikonfigurasi.");
+  }
+
+  const transporter = createSmtpTransport();
 
   await transporter.sendMail({
     from: smtpFrom,
@@ -44,12 +48,7 @@ export async function sendSchoolVerificationEmail({ to, schoolName, verifyUrl })
     throw new Error("SMTP belum dikonfigurasi.");
   }
 
-  const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: process.env.SMTP_SECURE === "true" || smtpPort === 465,
-    ...(smtpUser && smtpPass ? { auth: { user: smtpUser, pass: smtpPass } } : {}),
-  });
+  const transporter = createSmtpTransport();
 
   await transporter.sendMail({
     from: smtpFrom,
@@ -62,6 +61,56 @@ export async function sendSchoolVerificationEmail({ to, schoolName, verifyUrl })
       verifyUrl,
       "",
       "Jika Anda tidak meminta verifikasi ini, abaikan email ini.",
+    ].join("\n"),
+  });
+}
+
+export async function sendSchoolLoginCodeEmail({ to, schoolName, code }) {
+  if (!isSmtpConfigured()) {
+    throw new Error("SMTP belum dikonfigurasi.");
+  }
+
+  const transporter = createSmtpTransport();
+
+  await transporter.sendMail({
+    from: smtpFrom,
+    to,
+    subject: "Kode login Portal Cabdiswilayah I",
+    text: [
+      `Halo ${schoolName || "Sekolah"},`,
+      "",
+      `Kode login sekolah Anda: ${code}`,
+      "",
+      "Kode ini hanya dapat digunakan sekali dan berlaku selama 5 menit.",
+      "Jika Anda tidak meminta kode ini, abaikan email ini.",
+    ].join("\n"),
+  });
+}
+
+export async function sendSchoolAccountCreatedEmail({ to, schoolName, npsn, loginUrl }) {
+  if (!isSmtpConfigured()) {
+    throw new Error("SMTP belum dikonfigurasi.");
+  }
+
+  const transporter = createSmtpTransport();
+
+  await transporter.sendMail({
+    from: smtpFrom,
+    to,
+    subject: "Akun sekolah Portal Cabdiswilayah I telah dibuat",
+    text: [
+      `Halo ${schoolName || "Sekolah"},`,
+      "",
+      "Akun sekolah Anda telah dibuat oleh administrator Portal Cabdiswilayah I.",
+      `NPSN: ${npsn}`,
+      "",
+      "Untuk masuk, buka halaman login berikut:",
+      loginUrl,
+      "",
+      "Pilih login Sekolah, masukkan NPSN, lalu masukkan kode sekali pakai yang dikirim ke alamat email ini.",
+      "Anda tidak memerlukan password sekolah. Kode login berlaku selama 5 menit.",
+      "",
+      "Jika Anda tidak mengharapkan email ini, hubungi administrator portal.",
     ].join("\n"),
   });
 }

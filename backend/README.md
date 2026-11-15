@@ -8,9 +8,8 @@ Role yang digunakan:
 - `super_user`: dapat mengakses seluruh aplikasi dan mengelola user/aplikasi.
 - `medium_user`: hanya dapat mengakses aplikasi yang ada di
   `user_application_access`.
-- `school_user`: login menggunakan NPSN, lalu hanya dapat mengakses aplikasi
-  dengan password yang diberikan administrator; akses aplikasi memerlukan
-  email terverifikasi dan persetujuan admin.
+- `school_user`: login menggunakan NPSN dan kode sekali pakai yang dikirim ke
+  email sekolah; akses aplikasi memerlukan email terverifikasi dan persetujuan admin.
 
 ## Menjalankan
 
@@ -25,12 +24,18 @@ Role yang digunakan:
 4. Jalankan `mysql/003_add_school_accounts.sql` untuk menambahkan akun sekolah
    dan token verifikasi email.
 5. Jalankan `mysql/004_create_login_protection.sql` untuk tabel blokir IP dan sesi.
-6. Isi konfigurasi SMTP di bawah ini untuk mengaktifkan reset password dan
-   verifikasi email sekolah.
-7. Jalankan `npm install` dan `npm run dev` dari folder `backend`.
+6. Jalankan `mysql/005_create_school_login_codes.sql` untuk tabel kode login sekolah.
+7. Isi konfigurasi SMTP di bawah ini untuk mengaktifkan email login, reset password,
+   dan verifikasi email sekolah.
+8. Jalankan `npm install` dan `npm run dev` dari folder `backend`.
 
-Login staf dan sekolah diblokir selama 10 menit setelah 5 kegagalan dari IP yang
-sama. Sesi berakhir setelah 10 menit tanpa aktivitas dan maksimal 24 jam.
+Kode login sekolah berlaku 5 menit, dibatasi 3 permintaan per 15 menit per NPSN
+(maksimal 10 permintaan per IP), dan hanya dapat dicoba 5 kali. Sekolah harus
+memiliki email terdaftar. Super user mengisi email saat membuat akun; portal
+mengirim pemberitahuan pembuatan akun ke alamat itu. Kode OTP pertama akan
+memverifikasi email tersebut. Login staf dan sekolah diblokir selama 10 menit
+setelah 5 kegagalan dari IP yang sama. Sesi berakhir setelah 10 menit tanpa
+aktivitas dan maksimal 24 jam.
 Jika aplikasi berjalan di belakang reverse proxy, atur `TRUST_PROXY` hanya
 untuk jumlah hop atau alamat proxy yang benar agar alamat IP klien tidak dapat
 dipalsukan melalui header.
@@ -45,11 +50,13 @@ Endpoint utama:
 - `GET /api/activity-logs` (superadmin)
 - `GET /api/apps`, `GET /api/apps/:id`, `GET /api/apps/:id/redirect`
 - `POST /api/apps` (admin/superadmin), `PATCH /api/apps/:id` dan `DELETE /api/apps/:id` (superadmin)
-- `POST /auth/school-login` (NPSN dan password), `POST /auth/school/request-link`, dan
+- `POST /auth/school-login` (minta kode via NPSN), `POST /auth/school-login/verify`
+  (verifikasi kode), `POST /auth/school/request-link`, dan
   `POST /auth/school/verify` untuk login serta verifikasi email sekolah
 - `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`,
   `DELETE /api/schools/:npsn`, dan
   `PUT /api/schools/:npsn/app-access` untuk pengelolaan sekolah oleh super user
+  (`POST /api/schools` menerima `npsn`, `name`, dan `email` serta mengirim email pemberitahuan)
 
 Untuk memberi akses aplikasi kepada medium user, tambahkan baris pada tabel
 `user_application_access` di MySQL:

@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import db from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { writeAuditLog } from "../audit.js";
+import { isSmtpConfigured, sendSchoolAccountCreatedEmail } from "../email.js";
 
 const router = Router();
 
@@ -39,14 +40,24 @@ router.get("/", async (_req, res, next) => {
 router.post("/", async (req, res, next) => {
   const npsn = typeof req.body.npsn === "string" ? req.body.npsn.trim() : "";
   const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
   if (!/^\d{8}$/.test(npsn)) {
     return res.status(400).json({ error: "NPSN harus berupa 8 digit angka." });
   }
   if (!name) {
     return res.status(400).json({ error: "Nama sekolah wajib diisi." });
   }
+  if (email.length > 255 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: "Alamat email sekolah tidak valid." });
+  }
+  if (!isSmtpConfigured()) {
+    return res.status(503).json({
+      error: "Layanan email belum dikonfigurasi. Akun belum dibuat; hubungi administrator portal.",
+    });
+  }
 
   const connection = await db.getConnection();
+  let educationApps;
   try {
     await connection.beginTransaction();
     const [existing] = await connection.query(
@@ -58,12 +69,21 @@ router.post("/", async (req, res, next) => {
       return res.status(409).json({ error: "NPSN sudah terdaftar di sistem." });
     }
 
+    const [existingEmails] = await connection.query(
+      "SELECT npsn FROM schools WHERE email = ? OR pending_email = ? LIMIT 1",
+      [email, email],
+    );
+    if (existingEmails.length > 0) {
+      await connection.rollback();
+      return res.status(409).json({ error: "Email sudah digunakan oleh sekolah lain." });
+    }
+
     const passwordHash = await bcrypt.hash(randomUUID(), 10);
     await connection.query(
-      "INSERT INTO schools (npsn, name, password_hash, status) VALUES (?, ?, ?, 'approved')",
-      [npsn, name, passwordHash],
+      "INSERT INTO schools (npsn, name, password_hash, status, email) VALUES (?, ?, ?, 'approved', ?)",
+      [npsn, name, passwordHash, email],
     );
-    const [educationApps] = await connection.query(
+    [educationApps] = await connection.query(
       "SELECT id FROM applications WHERE LOWER(category) = 'pendidikan'",
     );
     if (educationApps.length > 0) {
@@ -77,13 +97,32 @@ router.post("/", async (req, res, next) => {
     await writeAuditLog({
       actorId: req.user.id,
       action: "school_created",
-      details: { name },
+      details: { name, npsn },
     });
+
+    let notificationSent = true;
+    let message = `Akun sekolah ${name} berhasil dibuat. Email pemberitahuan dikirim ke alamat sekolah.`;
+    try {
+      const loginUrl = new URL("/login", process.env.FRONTEND_URL || "http://localhost:5173");
+      await sendSchoolAccountCreatedEmail({
+        to: email,
+        schoolName: name,
+        npsn,
+        loginUrl: loginUrl.toString(),
+      });
+    } catch (error) {
+      notificationSent = false;
+      message = "Akun sekolah berhasil dibuat, tetapi email pemberitahuan gagal dikirim. Periksa konfigurasi SMTP.";
+      console.error("Email pemberitahuan akun sekolah gagal dikirim:", error.message);
+    }
+
     res.status(201).json({
-      message: `Sekolah ${name} (NPSN: ${npsn}) berhasil dibuat dengan akses awal ke ${educationApps.length} aplikasi kategori Pendidikan.`,
+      message,
+      notificationSent,
       school: {
         npsn,
         name,
+        email,
         status: "approved",
         app_access: educationApps.map(({ id }) => id),
       },

@@ -63,6 +63,7 @@ function Dashboard() {
   const [showAddSchoolModal, setShowAddSchoolModal] = useState(false);
   const [newSchoolNpsn, setNewSchoolNpsn] = useState("");
   const [newSchoolName, setNewSchoolName] = useState("");
+  const [newSchoolEmail, setNewSchoolEmail] = useState("");
   const [isAddingSchool, setIsAddingSchool] = useState(false);
   const [addSchoolError, setAddSchoolError] = useState("");
   
@@ -172,8 +173,8 @@ function Dashboard() {
   // Handler: Add School
   const handleAddSchool = async (e) => {
     e.preventDefault();
-    if (!newSchoolNpsn.trim() || !newSchoolName.trim()) {
-      setAddSchoolError("Semua field harus diisi.");
+    if (!newSchoolNpsn.trim() || !newSchoolName.trim() || !newSchoolEmail.trim()) {
+      setAddSchoolError("NPSN, nama sekolah, dan email wajib diisi.");
       return;
     }
     setIsAddingSchool(true);
@@ -182,11 +183,18 @@ function Dashboard() {
       const res = await api.post("/api/schools", {
         npsn: newSchoolNpsn.trim(),
         name: newSchoolName.trim(),
+        email: newSchoolEmail.trim(),
       });
-      setToastMessage(res.data?.message || "Sekolah berhasil ditambahkan!");
+      const message = res.data?.message || "Sekolah berhasil ditambahkan!";
+      if (res.data?.notificationSent === false) {
+        alert(message);
+      } else {
+        setToastMessage(message);
+      }
       setShowAddSchoolModal(false);
       setNewSchoolNpsn("");
       setNewSchoolName("");
+      setNewSchoolEmail("");
       fetchSchools();
     } catch (err) {
       setAddSchoolError(err.response?.data?.error || "Gagal menambahkan sekolah.");
@@ -1451,7 +1459,7 @@ function Dashboard() {
                 <span className="school-create-icon"><GraduationCap size={20} /></span>
                 <div>
                   <h3>Tambah Sekolah</h3>
-                  <p>Daftarkan sekolah menggunakan NPSN.</p>
+                  <p>Daftarkan NPSN dan email aktif sekolah.</p>
                 </div>
               </div>
               <button className="modal-close" disabled={isAddingSchool} onClick={() => setShowAddSchoolModal(false)}>
@@ -1492,7 +1500,21 @@ function Dashboard() {
                     disabled={isAddingSchool}
                   />
                 </div>
-                <div className="school-create-note"><CheckCircle2 size={17} /><span>Aplikasi kategori Pendidikan akan diberikan otomatis. Sekolah perlu memverifikasi email sebelum akses dibuka.</span></div>
+                <div className="form-group school-form-group">
+                  <label htmlFor="new-school-email">Email Sekolah</label>
+                  <input
+                    id="new-school-email"
+                    type="email"
+                    autoComplete="email"
+                    value={newSchoolEmail}
+                    onChange={(e) => setNewSchoolEmail(e.target.value)}
+                    placeholder="contoh: sekolah@email.com"
+                    required
+                    disabled={isAddingSchool}
+                  />
+                  <span>Email ini menerima pemberitahuan akun dibuat dan kode OTP untuk login.</span>
+                </div>
+                <div className="school-create-note"><CheckCircle2 size={17} /><span>Aplikasi kategori Pendidikan diberikan otomatis. Sekolah login menggunakan NPSN dan kode sekali pakai; tidak ada password sekolah.</span></div>
               </div>
               <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", padding: "16px 20px", borderTop: "1px solid var(--line)" }}>
                 <button type="button" className="btn-cancel" disabled={isAddingSchool} onClick={() => setShowAddSchoolModal(false)}>

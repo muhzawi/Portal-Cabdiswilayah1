@@ -1,10 +1,17 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { createHash, randomBytes } from "node:crypto";
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  randomInt,
+  timingSafeEqual,
+} from "node:crypto";
 import db from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import { writeAuditLog } from "../audit.js";
 import { createAuthSessionToken } from "../security/auth-sessions.js";
+import { JWT_SECRET } from "../config/jwt.js";
 import {
   clearLoginFailures,
   getClientIp,
@@ -14,13 +21,24 @@ import {
 import {
   isSmtpConfigured,
   sendPasswordResetEmail,
+  sendSchoolLoginCodeEmail,
   sendSchoolVerificationEmail,
 } from "../email.js";
 
 const router = Router();
+const MAX_SCHOOL_LOGIN_CODE_REQUESTS = 3;
+const MAX_SCHOOL_LOGIN_CODE_REQUESTS_PER_IP = 10;
+const MAX_SCHOOL_LOGIN_CODE_ATTEMPTS = 5;
 const genericResetResponse = {
   message: "Jika email terdaftar, instruksi reset password akan dikirim.",
 };
+
+function hashSchoolLoginCode(code) {
+  return createHmac("sha256", JWT_SECRET)
+    .update("school-login-code:")
+    .update(code)
+    .digest("hex");
+}
 
 router.post("/forgot-password", async (req, res, next) => {
   try {
@@ -173,6 +191,16 @@ router.post("/register", async (req, res, next) => {
 });
 
 router.post("/school-login", async (req, res, next) => {
+  const npsn = typeof req.body.npsn === "string" ? req.body.npsn.trim() : "";
+  if (!/^\d{8}$/.test(npsn)) {
+    return res.status(400).json({ error: "NPSN harus berupa 8 digit angka." });
+  }
+  if (!isSmtpConfigured()) {
+    return res.status(503).json({
+      error: "Layanan email belum dikonfigurasi. Hubungi administrator portal.",
+    });
+  }
+
   try {
     const clientIp = getClientIp(req);
     if (await isLoginIpBlocked(clientIp)) {
@@ -181,32 +209,172 @@ router.post("/school-login", async (req, res, next) => {
       });
     }
 
-    const npsn = typeof req.body.npsn === "string" ? req.body.npsn.trim() : "";
-    const password = typeof req.body.password === "string" ? req.body.password : "";
-    if (!/^\d{8}$/.test(npsn)) {
-      return res.status(400).json({ error: "NPSN harus berupa 8 digit angka." });
-    }
-    if (!password) {
-      return res.status(400).json({ error: "NPSN dan password wajib diisi." });
+    const connection = await db.getConnection();
+    let school;
+    let code;
+    let codeId;
+    try {
+      await connection.beginTransaction();
+      const [schools] = await connection.query(
+        "SELECT npsn, name, email, status FROM schools WHERE npsn = ? FOR UPDATE",
+        [npsn],
+      );
+      school = schools[0];
+      if (!school) {
+        await connection.rollback();
+        return res.status(404).json({ error: "NPSN belum terdaftar. Hubungi administrator." });
+      }
+      if (school.status === "rejected") {
+        await connection.rollback();
+        return res.status(403).json({ error: "Akun sekolah ditolak. Hubungi administrator." });
+      }
+      if (!school.email) {
+        await connection.rollback();
+        return res.status(409).json({
+          error: "Email sekolah belum terdaftar. Hubungi administrator untuk memperbarui data email.",
+        });
+      }
+
+      const [attempts] = await connection.query(
+        "SELECT COUNT(*) AS total FROM school_login_codes WHERE school_npsn = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)",
+        [npsn],
+      );
+      const [ipAttempts] = await connection.query(
+        "SELECT COUNT(*) AS total FROM school_login_codes WHERE request_ip = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)",
+        [clientIp],
+      );
+      if (
+        Number(attempts[0]?.total || 0) >= MAX_SCHOOL_LOGIN_CODE_REQUESTS
+        || Number(ipAttempts[0]?.total || 0) >= MAX_SCHOOL_LOGIN_CODE_REQUESTS_PER_IP
+      ) {
+        await connection.rollback();
+        return res.status(429).json({
+          error: "Batas permintaan kode tercapai. Coba lagi dalam 15 menit.",
+        });
+      }
+
+      await connection.query(
+        "UPDATE school_login_codes SET used_at = NOW() WHERE school_npsn = ? AND used_at IS NULL",
+        [npsn],
+      );
+      code = randomInt(100000, 1000000).toString();
+      const codeHash = hashSchoolLoginCode(code);
+      const [result] = await connection.query(
+        "INSERT INTO school_login_codes (school_npsn, email, request_ip, code_hash, expires_at) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE))",
+        [npsn, school.email, clientIp, codeHash],
+      );
+      codeId = result.insertId;
+      await connection.query(
+        "DELETE FROM school_login_codes WHERE created_at < DATE_SUB(NOW(), INTERVAL 1 DAY)",
+      );
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
     }
 
-    const [rows] = await db.query(
-      "SELECT npsn, name, password_hash, status, email, email_verified_at FROM schools WHERE npsn = ?",
+    try {
+      await sendSchoolLoginCodeEmail({
+        to: school.email,
+        schoolName: school.name,
+        code,
+      });
+    } catch (error) {
+      await db.query(
+        "UPDATE school_login_codes SET used_at = NOW() WHERE id = ? AND used_at IS NULL",
+        [codeId],
+      );
+      console.error("Email kode login sekolah gagal dikirim:", error.message);
+      return res.status(503).json({
+        error: "Kode login gagal dikirim. Periksa konfigurasi email lalu coba lagi.",
+      });
+    }
+
+    res.json({ message: "Kode login telah dikirim ke email sekolah yang terdaftar." });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/school-login/verify", async (req, res, next) => {
+  const clientIp = getClientIp(req);
+  if (await isLoginIpBlocked(clientIp)) {
+    return res.status(429).json({
+      error: "Terlalu banyak percobaan login gagal. IP diblokir selama 10 menit.",
+    });
+  }
+
+  const npsn = typeof req.body.npsn === "string" ? req.body.npsn.trim() : "";
+  const code = typeof req.body.code === "string" ? req.body.code.trim() : "";
+  if (!/^\d{8}$/.test(npsn) || !/^\d{6}$/.test(code)) {
+    return res.status(400).json({ error: "NPSN atau kode login tidak valid." });
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [schools] = await connection.query(
+      "SELECT npsn, name, email, status FROM schools WHERE npsn = ? FOR UPDATE",
       [npsn],
     );
-    const school = rows[0];
-    if (!school || !(await bcrypt.compare(password, school.password_hash))) {
+    const school = schools[0];
+    if (!school) {
+      await connection.rollback();
+      return res.status(404).json({ error: "NPSN belum terdaftar." });
+    }
+    if (school.status === "rejected") {
+      await connection.rollback();
+      return res.status(403).json({ error: "Akun sekolah ditolak. Hubungi administrator." });
+    }
+
+    const [codes] = await connection.query(
+      `SELECT id, email, code_hash, failed_attempts
+       FROM school_login_codes
+       WHERE school_npsn = ? AND used_at IS NULL AND expires_at > NOW()
+       ORDER BY created_at DESC
+       LIMIT 1 FOR UPDATE`,
+      [npsn],
+    );
+    const loginCode = codes[0];
+    const expectedHash = hashSchoolLoginCode(code);
+    const actualHash = loginCode && loginCode.email === school.email
+      ? Buffer.from(loginCode.code_hash, "hex")
+      : Buffer.alloc(0);
+    const expectedHashBuffer = Buffer.from(expectedHash, "hex");
+    const isValidCode = actualHash.length === expectedHashBuffer.length
+      && timingSafeEqual(actualHash, expectedHashBuffer);
+
+    if (!isValidCode) {
+      if (loginCode) {
+        const nextAttempts = Number(loginCode.failed_attempts) + 1;
+        await connection.query(
+          `UPDATE school_login_codes
+           SET failed_attempts = ?, used_at = IF(? >= ?, NOW(), used_at)
+           WHERE id = ?`,
+          [nextAttempts, nextAttempts, MAX_SCHOOL_LOGIN_CODE_ATTEMPTS, loginCode.id],
+        );
+      }
+      await connection.commit();
       const blocked = await recordFailedLogin(clientIp);
       return res.status(blocked ? 429 : 401).json({
         error: blocked
           ? "Terlalu banyak percobaan login gagal. IP diblokir selama 10 menit."
-          : "NPSN atau password salah.",
+          : "Kode login salah atau sudah kedaluwarsa. Minta kode baru untuk mencoba lagi.",
       });
     }
+
+    await connection.query(
+      "UPDATE school_login_codes SET used_at = NOW() WHERE id = ?",
+      [loginCode.id],
+    );
+    await connection.query(
+      "UPDATE schools SET email_verified_at = COALESCE(email_verified_at, NOW()) WHERE npsn = ? AND email = ?",
+      [npsn, school.email],
+    );
+    await connection.commit();
     await clearLoginFailures(clientIp);
-    if (school.status === "rejected") {
-      return res.status(403).json({ error: "Akun sekolah ditolak. Hubungi administrator." });
-    }
 
     const token = await createAuthSessionToken(
       { npsn: school.npsn, name: school.name, role: "school_user", type: "school" },
@@ -226,11 +394,14 @@ router.post("/school-login", async (req, res, next) => {
         type: "school",
         status: school.status,
         email: school.email,
-        emailVerified: Boolean(school.email_verified_at),
+        emailVerified: true,
       },
     });
   } catch (error) {
+    await connection.rollback();
     next(error);
+  } finally {
+    connection.release();
   }
 });
 
