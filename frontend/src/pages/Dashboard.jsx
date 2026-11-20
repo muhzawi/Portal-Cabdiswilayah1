@@ -18,10 +18,14 @@ import {
   Save,
   GraduationCap,
   KeyRound,
+  FileSpreadsheet,
+  BookOpen,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import AppCard from "../components/AppCard";
 import AppFormModal from "../components/AppFormModal";
+import SchoolExcelImportModal from "../components/SchoolExcelImportModal";
+import SchoolImportGuideModal from "../components/SchoolImportGuideModal";
 import Button from "../components/ui/Button";
 import api from "../api";
 import { getAppIcon } from "../constants";
@@ -61,6 +65,8 @@ function Dashboard() {
   
   // Modal Tambah Sekolah
   const [showAddSchoolModal, setShowAddSchoolModal] = useState(false);
+  const [showSchoolExcelModal, setShowSchoolExcelModal] = useState(false);
+  const [showSchoolImportGuide, setShowSchoolImportGuide] = useState(false);
   const [newSchoolNpsn, setNewSchoolNpsn] = useState("");
   const [newSchoolName, setNewSchoolName] = useState("");
   const [newSchoolEmail, setNewSchoolEmail] = useState("");
@@ -221,6 +227,14 @@ function Dashboard() {
     setEditSchoolApps((prev) => 
       prev.includes(appId) ? prev.filter((id) => id !== appId) : [...prev, appId]
     );
+  };
+
+  const handleSelectAllSchoolApps = () => {
+    setEditSchoolApps(availableApps.map((app) => app.id));
+  };
+
+  const handleClearAllSchoolApps = () => {
+    setEditSchoolApps([]);
   };
 
   // Handler: Save School Changes
@@ -945,13 +959,31 @@ function Dashboard() {
               <h2>Kelola Sekolah</h2>
               <p>Atur akun sekolah, verifikasi, dan akses aplikasi.</p>
             </div>
-            <Button
-              type="button"
-              className="button button-primary school-add-button"
-              onClick={() => setShowAddSchoolModal(true)}
-            >
-              <Plus size={17} strokeWidth={2.25} /> Tambah Sekolah
-            </Button>
+            <div className="school-admin-actions">
+              <Button
+                type="button"
+                variant="secondary"
+                className="button button-secondary school-add-button"
+                onClick={() => setShowSchoolExcelModal(true)}
+              >
+                <FileSpreadsheet size={17} /> Upload Excel
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="button button-secondary school-add-button"
+                onClick={() => setShowSchoolImportGuide(true)}
+              >
+                <BookOpen size={17} /> Panduan
+              </Button>
+              <Button
+                type="button"
+                className="button button-primary school-add-button"
+                onClick={() => setShowAddSchoolModal(true)}
+              >
+                <Plus size={17} strokeWidth={2.25} /> Tambah Sekolah
+              </Button>
+            </div>
           </div>
           <div className="monitoring-filter-bar">
             <label className="search-input monitoring-search">
@@ -1562,6 +1594,16 @@ function Dashboard() {
         </div>
       )}
 
+      {showSchoolExcelModal && (
+        <SchoolExcelImportModal
+          onClose={() => setShowSchoolExcelModal(false)}
+          onImported={() => fetchSchools()}
+        />
+      )}
+      {showSchoolImportGuide && (
+        <SchoolImportGuideModal onClose={() => setShowSchoolImportGuide(false)} />
+      )}
+
       {/* MODAL EDIT SEKOLAH */}
       {editingSchool && (
         <div className="modal-overlay" onClick={() => !isSavingSchool && setEditingSchool(null)}>
@@ -1606,6 +1648,25 @@ function Dashboard() {
                   <label style={{ margin: 0 }}>
                     Aplikasi yang Diizinkan ({editSchoolApps.length} dipilih)
                   </label>
+                  <div className="app-selection-actions">
+                    <button
+                      type="button"
+                      className="btn-text-action"
+                      onClick={handleSelectAllSchoolApps}
+                      disabled={isSavingSchool || availableApps.length === 0}
+                    >
+                      Pilih Semua
+                    </button>
+                    <span style={{ color: "var(--line)" }}>|</span>
+                    <button
+                      type="button"
+                      className="btn-text-action"
+                      onClick={handleClearAllSchoolApps}
+                      disabled={isSavingSchool || editSchoolApps.length === 0}
+                    >
+                      Hapus Semua
+                    </button>
+                  </div>
                 </div>
                 <div className="apps-checklist-grid">
                   {availableApps.map((app) => {

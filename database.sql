@@ -35,7 +35,7 @@ CREATE TABLE `activity_logs` (
   KEY `idx_activity_target` (`target_id`),
   CONSTRAINT `fk_activity_actor` FOREIGN KEY (`actor_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_activity_target` FOREIGN KEY (`target_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -44,7 +44,7 @@ CREATE TABLE `activity_logs` (
 
 LOCK TABLES `activity_logs` WRITE;
 /*!40000 ALTER TABLE `activity_logs` DISABLE KEYS */;
-INSERT INTO `activity_logs` VALUES (1,'usr-1790242403755','user_rejected','usr-1790252152360',NULL,'2026-09-24 12:43:12'),(2,'usr-1790242403755','application_created',NULL,'{\"appId\": \"akademink\", \"appName\": \"akademink\"}','2026-09-24 13:01:51'),(3,'usr-1790242403755','login',NULL,NULL,'2026-10-09 11:35:30'),(4,'usr-1790242403755','login',NULL,NULL,'2026-11-15 08:32:56'),(5,'usr-1790242403755','school_created',NULL,'{\"name\": \"sd_sukasuka\"}','2026-11-15 08:33:45'),(6,'usr-1790242403755','login',NULL,NULL,'2026-11-15 08:40:04'),(7,'usr-1790242403755','school_updated',NULL,'{\"name\": \"sd_sukasuka\", \"status\": \"approved\"}','2026-11-15 08:40:18'),(8,'usr-1790242403755','school_app_access_changed',NULL,'{\"applicationIds\": [\"akademink\"]}','2026-11-15 08:40:18'),(9,'usr-1790242403755','school_deleted',NULL,'{\"npsn\": \"12345678\"}','2026-11-15 08:40:29'),(10,'usr-1790242403755','school_created',NULL,'{\"name\": \"sd_prabowoKOnt\", \"npsn\": \"12345678\"}','2026-11-15 08:41:19');
+INSERT INTO `activity_logs` VALUES (1,'usr-1790242403755','user_rejected','usr-1790252152360',NULL,'2026-09-24 12:43:12'),(2,'usr-1790242403755','application_created',NULL,'{\"appId\": \"akademink\", \"appName\": \"akademink\"}','2026-09-24 13:01:51'),(3,'usr-1790242403755','login',NULL,NULL,'2026-10-09 11:35:30'),(4,'usr-1790242403755','login',NULL,NULL,'2026-11-15 08:32:56'),(5,'usr-1790242403755','school_created',NULL,'{\"name\": \"sd_sukasuka\"}','2026-11-15 08:33:45'),(6,'usr-1790242403755','login',NULL,NULL,'2026-11-15 08:40:04'),(7,'usr-1790242403755','school_updated',NULL,'{\"name\": \"sd_sukasuka\", \"status\": \"approved\"}','2026-11-15 08:40:18'),(8,'usr-1790242403755','school_app_access_changed',NULL,'{\"applicationIds\": [\"akademink\"]}','2026-11-15 08:40:18'),(9,'usr-1790242403755','school_deleted',NULL,'{\"npsn\": \"12345678\"}','2026-11-15 08:40:29'),(10,'usr-1790242403755','school_created',NULL,'{\"name\": \"sd_prabowoKOnt\", \"npsn\": \"12345678\"}','2026-11-15 08:41:19'),(11,'usr-1790242403755','login',NULL,NULL,'2026-11-20 08:56:45'),(13,'usr-1790242403755','login',NULL,NULL,'2026-11-20 08:59:50'),(14,'usr-1790242403755','school_updated',NULL,'{\"name\": \"sd_prabowoKOnt\", \"status\": \"approved\"}','2026-11-20 09:00:27'),(15,'usr-1790242403755','school_app_access_changed',NULL,'{\"applicationIds\": [\"akademink\"]}','2026-11-20 09:00:27'),(17,'usr-1790242403755','login',NULL,NULL,'2026-11-20 09:02:37'),(18,'usr-1790242403755','login',NULL,NULL,'2026-11-20 09:12:29'),(19,'usr-1790242403755','login',NULL,NULL,'2026-11-20 09:35:22'),(20,'usr-1790242403755','school_password_setup_link_sent',NULL,'{\"npsn\": \"12345678\"}','2026-11-20 09:36:40'),(21,'usr-1790242403755','login',NULL,NULL,'2026-11-20 09:47:43'),(22,'usr-1790242403755','school_temporary_password_sent',NULL,'{\"npsn\": \"12345678\"}','2026-11-20 09:48:02'),(24,'usr-1790242403755','login',NULL,NULL,'2026-11-20 09:52:01'),(25,'usr-1790242403755','school_updated',NULL,'{\"name\": \"sd_prabowoKOnt\", \"status\": \"approved\"}','2026-11-20 09:57:26'),(26,'usr-1790242403755','school_app_access_changed',NULL,'{\"applicationIds\": [\"akademink\"]}','2026-11-20 09:57:26'),(27,'usr-1790242403755','login',NULL,NULL,'2026-11-20 10:12:09'),(28,'usr-1790242403755','login',NULL,NULL,'2026-11-20 10:40:23'),(29,'usr-1790242403755','school_created',NULL,'{\"name\": \"testinguntuksekolah\", \"npsn\": \"12233445\"}','2026-11-20 10:40:35');
 /*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -107,6 +107,7 @@ CREATE TABLE `auth_sessions` (
 
 LOCK TABLES `auth_sessions` WRITE;
 /*!40000 ALTER TABLE `auth_sessions` DISABLE KEYS */;
+INSERT INTO `auth_sessions` VALUES ('75cf19a4-8347-42b2-aa00-b9445cedd834','user','usr-1790242403755','2026-11-20 17:21:50.090448','2026-11-21 17:12:09','2026-11-20 10:12:09'),('934a523b-f411-49b6-8f39-d12f945e3923','user','usr-1790242403755','2026-11-20 17:40:40.328433','2026-11-21 17:40:23','2026-11-20 10:40:23'),('d1374581-6761-4e29-84fe-7a607112f75e','user','usr-1790242403755','2026-11-20 16:18:44.324633','2026-11-21 16:12:29','2026-11-20 09:12:29');
 /*!40000 ALTER TABLE `auth_sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -133,7 +134,7 @@ CREATE TABLE `login_ip_attempts` (
 
 LOCK TABLES `login_ip_attempts` WRITE;
 /*!40000 ALTER TABLE `login_ip_attempts` DISABLE KEYS */;
-INSERT INTO `login_ip_attempts` VALUES ('::1',0,'2026-11-15 15:46:07',NULL);
+INSERT INTO `login_ip_attempts` VALUES ('::1',0,'2026-11-20 17:40:23',NULL);
 /*!40000 ALTER TABLE `login_ip_attempts` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -189,6 +190,7 @@ CREATE TABLE `school_application_access` (
 
 LOCK TABLES `school_application_access` WRITE;
 /*!40000 ALTER TABLE `school_application_access` DISABLE KEYS */;
+INSERT INTO `school_application_access` VALUES ('12345678','akademink','2026-11-20 09:57:26');
 /*!40000 ALTER TABLE `school_application_access` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -243,7 +245,7 @@ CREATE TABLE `school_login_codes` (
   KEY `idx_school_login_codes_ip_created` (`request_ip`,`created_at`),
   KEY `idx_school_login_codes_expiry` (`expires_at`),
   CONSTRAINT `fk_school_login_codes_school` FOREIGN KEY (`school_npsn`) REFERENCES `schools` (`npsn`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -252,8 +254,75 @@ CREATE TABLE `school_login_codes` (
 
 LOCK TABLES `school_login_codes` WRITE;
 /*!40000 ALTER TABLE `school_login_codes` DISABLE KEYS */;
-INSERT INTO `school_login_codes` VALUES (1,'12345678','teguh.5233151037@mhs.unimed.ac.id','::1','aa13690fabc28d34e9ffc7b930a1371131900ef681a196b987f9791111ebdc9e',0,'2026-11-15 15:50:30','2026-11-15 15:46:07','2026-11-15 08:45:30');
+INSERT INTO `school_login_codes` VALUES (2,'12345678','teguh.5233151037@mhs.unimed.ac.id','::1','6d1762ec97cf2eae220dad7918efb3f435871d62bf8e1cf4076020502dea99d6',0,'2026-11-20 16:02:58','2026-11-20 15:58:43','2026-11-20 08:57:58'),(3,'12345678','teguh.5233151037@mhs.unimed.ac.id','::1','3e76c19b3ba53adc7c2db36d44c33bc5341c9bbd6df05f09881657e9a929a971',0,'2026-11-20 16:06:16','2026-11-20 16:01:42','2026-11-20 09:01:16'),(4,'12345678','teguh.5233151037@mhs.unimed.ac.id','::1','4a99a2eeca16f42994c6b8f1c06bd6196a8789544cf7ca6358467816d07fd39d',0,'2026-11-20 16:54:04','2026-11-20 16:50:32','2026-11-20 09:49:04'),(5,'12345678','teguh.5233151037@mhs.unimed.ac.id','::1','5a939372f07eda007fbd9abe0142b6b11ac365a9cb839731591552a9d7028531',0,'2026-11-20 16:56:15',NULL,'2026-11-20 09:51:15');
 /*!40000 ALTER TABLE `school_login_codes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `school_task_recipients`
+--
+
+DROP TABLE IF EXISTS `school_task_recipients`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `school_task_recipients` (
+  `task_id` bigint unsigned NOT NULL,
+  `school_npsn` char(8) NOT NULL,
+  `status` enum('pending','completed') NOT NULL DEFAULT 'pending',
+  `completed_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`task_id`,`school_npsn`),
+  KEY `idx_school_task_recipients_school_status` (`school_npsn`,`status`),
+  CONSTRAINT `fk_school_task_recipients_school` FOREIGN KEY (`school_npsn`) REFERENCES `schools` (`npsn`) ON DELETE CASCADE,
+  CONSTRAINT `fk_school_task_recipients_task` FOREIGN KEY (`task_id`) REFERENCES `school_tasks` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `school_task_recipients`
+--
+
+LOCK TABLES `school_task_recipients` WRITE;
+/*!40000 ALTER TABLE `school_task_recipients` DISABLE KEYS */;
+INSERT INTO `school_task_recipients` VALUES (1,'12345678','completed','2026-11-20 15:59:13','2026-11-20 08:57:33'),(2,'12345678','pending',NULL,'2026-11-20 09:01:05');
+/*!40000 ALTER TABLE `school_task_recipients` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `school_tasks`
+--
+
+DROP TABLE IF EXISTS `school_tasks`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `school_tasks` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `created_by` varchar(36) DEFAULT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `application_id` varchar(255) DEFAULT NULL,
+  `target_url` varchar(2048) NOT NULL,
+  `attachment_name` varchar(255) DEFAULT NULL,
+  `attachment_mime` varchar(127) DEFAULT NULL,
+  `attachment_data` mediumblob,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_school_tasks_created` (`created_at`),
+  KEY `fk_school_tasks_creator` (`created_by`),
+  KEY `fk_school_tasks_application` (`application_id`),
+  CONSTRAINT `fk_school_tasks_application` FOREIGN KEY (`application_id`) REFERENCES `applications` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_school_tasks_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `school_tasks`
+--
+
+LOCK TABLES `school_tasks` WRITE;
+/*!40000 ALTER TABLE `school_tasks` DISABLE KEYS */;
+INSERT INTO `school_tasks` VALUES (1,'usr-1790242403755','hey antek antek asing','saya dapat informasi','akademink','https://github.com/muhzawi/Portal-Disdikwilayah1/tree/refactor1/backend',NULL,NULL,NULL,'2026-11-20 08:57:33'),(2,'usr-1790242403755','hey ada ular di sepatu mu','menuju tak terbatas dan melampauinya','akademink','https://github.com/muhzawi/Portal-Disdikwilayah1/tree/refactor1/backend',NULL,NULL,NULL,'2026-11-20 09:01:05');
+/*!40000 ALTER TABLE `school_tasks` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -267,8 +336,10 @@ CREATE TABLE `schools` (
   `npsn` char(8) NOT NULL,
   `name` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
+  `password_change_required` tinyint(1) NOT NULL DEFAULT '1',
   `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'approved',
   `email` varchar(255) DEFAULT NULL,
+  `phone` varchar(30) DEFAULT NULL,
   `pending_email` varchar(255) DEFAULT NULL,
   `email_verified_at` datetime DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -285,7 +356,7 @@ CREATE TABLE `schools` (
 
 LOCK TABLES `schools` WRITE;
 /*!40000 ALTER TABLE `schools` DISABLE KEYS */;
-INSERT INTO `schools` VALUES ('12345678','sd_prabowoKOnt','$2a$10$v5NoYoVSK2vUAVjcslfx1OLsSlqqWWcNn.vgXLoOWYLa5I79Toesu','approved','teguh.5233151037@mhs.unimed.ac.id',NULL,'2026-11-15 15:46:07','2026-11-15 08:41:19','2026-11-15 08:46:07');
+INSERT INTO `schools` VALUES ('12233445','testinguntuksekolah','$2a$10$VWYF7BtCUwJ/Pc.qDsRcLuTnc00.pZgCndSLRJH77c1v/6G/N5os6',1,'approved','teguharif5505@gmail.com','0812345678',NULL,NULL,'2026-11-20 10:40:35','2026-11-20 10:40:35'),('12345678','sd_prabowoKOnt','$2a$10$npZHuMcEnEQd2hQphqzrMeqWlmikyjqJ7O/jwmxMNi3wuvZMZMQ62',0,'approved','teguh.5233151037@mhs.unimed.ac.id',NULL,NULL,'2026-11-15 15:46:07','2026-11-15 08:41:19','2026-11-20 09:50:52');
 /*!40000 ALTER TABLE `schools` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -358,4 +429,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-11-15 15:49:58
+-- Dump completed on 2026-11-20 17:44:51

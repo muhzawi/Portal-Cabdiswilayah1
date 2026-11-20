@@ -1581,6 +1581,17 @@ em {
   background: var(--surface);
 }
 
+.school-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.school-admin-actions .school-add-button {
+  min-height: 44px;
+}
+
 .school-onboarding-wrap {
   width: min(100%, 760px);
   margin: clamp(20px, 5vh, 52px) auto;
@@ -1814,6 +1825,181 @@ em {
   gap: 20px;
 }
 
+.school-excel-import-modal,
+.school-import-guide-modal {
+  width: min(720px, 100%);
+  max-height: 90vh;
+}
+
+.school-excel-subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.school-excel-import-body,
+.school-import-guide-body {
+  max-height: calc(90vh - 180px);
+  overflow-y: auto;
+  align-items: stretch;
+}
+
+.school-excel-file-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.school-excel-file-input span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}
+
+.school-excel-file-input input {
+  width: 100%;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.school-excel-filename,
+.school-excel-progress {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.school-excel-preview,
+.school-excel-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.school-excel-preview p {
+  margin: 0;
+}
+
+.school-excel-issues {
+  max-height: 180px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px 10px 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--bg);
+  font-size: 0.8rem;
+}
+
+.school-excel-issues li + li {
+  margin-top: 6px;
+}
+
+.school-excel-import-footer,
+.school-import-guide-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.school-import-guide-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--green-700);
+}
+
+.school-import-guide-heading h3 {
+  margin: 0;
+  color: var(--ink);
+}
+
+.school-import-guide-heading p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.school-import-guide-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.school-import-guide-actions p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.school-import-guide-body h4 {
+  margin: 4px 0 10px;
+  color: var(--ink);
+}
+
+.school-import-guide-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.school-import-guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.school-import-guide-table th,
+.school-import-guide-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.school-import-guide-table th {
+  color: var(--ink);
+  background: var(--bg);
+}
+
+.school-import-guide-table td {
+  color: var(--muted);
+}
+
+.school-import-guide-list {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--ink);
+  font-size: 0.84rem;
+  line-height: 1.65;
+}
+
+.school-import-guide-list li + li {
+  margin-top: 5px;
+}
+
+.school-import-guide-note {
+  margin: 0;
+  padding: 12px;
+  border-radius: 8px;
+  color: var(--green-800);
+  background: var(--green-50);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 .school-create-modal .modal-header {
   align-items: flex-start;
   padding-bottom: 17px;
@@ -1930,11 +2116,25 @@ em {
     padding: 17px;
   }
 
+  .school-admin-actions {
+    flex-direction: column;
+  }
+
   .school-add-button {
     width: 100%;
   }
 
   .school-create-modal {
+    padding: 20px;
+  }
+
+  .school-import-guide-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .school-excel-import-modal,
+  .school-import-guide-modal {
     padding: 20px;
   }
 }
