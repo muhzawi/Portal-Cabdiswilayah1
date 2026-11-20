@@ -17,11 +17,15 @@ import {
   Pencil,
   Save,
   GraduationCap,
-  Key,
+  KeyRound,
+  FileSpreadsheet,
+  BookOpen,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import AppCard from "../components/AppCard";
 import AppFormModal from "../components/AppFormModal";
+import SchoolExcelImportModal from "../components/SchoolExcelImportModal";
+import SchoolImportGuideModal from "../components/SchoolImportGuideModal";
 import Button from "../components/ui/Button";
 import api from "../api";
 import { getAppIcon } from "../constants";
@@ -61,8 +65,12 @@ function Dashboard() {
   
   // Modal Tambah Sekolah
   const [showAddSchoolModal, setShowAddSchoolModal] = useState(false);
+  const [showSchoolExcelModal, setShowSchoolExcelModal] = useState(false);
+  const [showSchoolImportGuide, setShowSchoolImportGuide] = useState(false);
   const [newSchoolNpsn, setNewSchoolNpsn] = useState("");
   const [newSchoolName, setNewSchoolName] = useState("");
+  const [newSchoolEmail, setNewSchoolEmail] = useState("");
+  const [newSchoolPhone, setNewSchoolPhone] = useState("");
   const [isAddingSchool, setIsAddingSchool] = useState(false);
   const [addSchoolError, setAddSchoolError] = useState("");
   
@@ -73,10 +81,7 @@ function Dashboard() {
   const [editSchoolApps, setEditSchoolApps] = useState([]);
   const [isSavingSchool, setIsSavingSchool] = useState(false);
   
-  // Modal Reset Password
-  const [resetSchool, setResetSchool] = useState(null);
-  const [resetPasswordVal, setResetPasswordVal] = useState("");
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [sendingSchoolPasswordId, setSendingSchoolPasswordId] = useState("");
   
   // Modal Hapus Sekolah
   const [deletingSchool, setDeletingSchool] = useState(null);
@@ -172,8 +177,13 @@ function Dashboard() {
   // Handler: Add School
   const handleAddSchool = async (e) => {
     e.preventDefault();
-    if (!newSchoolNpsn.trim() || !newSchoolName.trim()) {
-      setAddSchoolError("Semua field harus diisi.");
+    if (
+      !newSchoolNpsn.trim()
+      || !newSchoolName.trim()
+      || !newSchoolEmail.trim()
+      || !newSchoolPhone.trim()
+    ) {
+      setAddSchoolError("NPSN, nama sekolah, email, dan nomor telepon wajib diisi.");
       return;
     }
     setIsAddingSchool(true);
@@ -182,11 +192,20 @@ function Dashboard() {
       const res = await api.post("/api/schools", {
         npsn: newSchoolNpsn.trim(),
         name: newSchoolName.trim(),
+        email: newSchoolEmail.trim(),
+        phone: newSchoolPhone.trim(),
       });
-      setToastMessage(res.data?.message || "Sekolah berhasil ditambahkan!");
+      const message = res.data?.message || "Sekolah berhasil ditambahkan!";
+      if (res.data?.notificationSent === false) {
+        alert(message);
+      } else {
+        setToastMessage(message);
+      }
       setShowAddSchoolModal(false);
       setNewSchoolNpsn("");
       setNewSchoolName("");
+      setNewSchoolEmail("");
+      setNewSchoolPhone("");
       fetchSchools();
     } catch (err) {
       setAddSchoolError(err.response?.data?.error || "Gagal menambahkan sekolah.");
@@ -208,6 +227,14 @@ function Dashboard() {
     setEditSchoolApps((prev) => 
       prev.includes(appId) ? prev.filter((id) => id !== appId) : [...prev, appId]
     );
+  };
+
+  const handleSelectAllSchoolApps = () => {
+    setEditSchoolApps(availableApps.map((app) => app.id));
+  };
+
+  const handleClearAllSchoolApps = () => {
+    setEditSchoolApps([]);
   };
 
   // Handler: Save School Changes
@@ -232,25 +259,23 @@ function Dashboard() {
     }
   };
 
-  // Handler: Reset Password
-  const handleResetPassword = async (e) => {
-    e.preventDefault();
-    if (!resetPasswordVal.trim()) {
-      alert("Password baru tidak boleh kosong.");
-      return;
-    }
-    setIsResettingPassword(true);
+  const handleSendSchoolTemporaryPassword = async (school) => {
+    const action = school.password_change_required
+      ? "mengirim ulang password sementara"
+      : "mereset password dan mengeluarkan sesi sekolah yang sedang aktif";
+    if (!window.confirm(`Lanjutkan ${action} untuk ${school.name}?`)) return;
+
+    setSendingSchoolPasswordId(school.npsn);
     try {
-      const res = await api.patch(`/api/schools/${resetSchool.npsn}/reset-password`, {
-        password: resetPasswordVal.trim(),
-      });
-      setToastMessage(res.data?.message || `Password sekolah ${resetSchool.name} berhasil direset!`);
-      setResetSchool(null);
-      setResetPasswordVal("");
+      const { data } = await api.post(
+        `/api/schools/${school.npsn}/send-temporary-password`,
+      );
+      setToastMessage(data?.message || "Password sementara dikirim ke email sekolah.");
+      fetchSchools();
     } catch (err) {
-      alert(err.response?.data?.error || "Gagal mereset password.");
+      alert(err.response?.data?.error || "Gagal mengirim password sementara.");
     } finally {
-      setIsResettingPassword(false);
+      setSendingSchoolPasswordId("");
     }
   };
 
@@ -934,13 +959,31 @@ function Dashboard() {
               <h2>Kelola Sekolah</h2>
               <p>Atur akun sekolah, verifikasi, dan akses aplikasi.</p>
             </div>
-            <Button
-              type="button"
-              className="button button-primary school-add-button"
-              onClick={() => setShowAddSchoolModal(true)}
-            >
-              <Plus size={17} strokeWidth={2.25} /> Tambah Sekolah
-            </Button>
+            <div className="school-admin-actions">
+              <Button
+                type="button"
+                variant="secondary"
+                className="button button-secondary school-add-button"
+                onClick={() => setShowSchoolExcelModal(true)}
+              >
+                <FileSpreadsheet size={17} /> Upload Excel
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="button button-secondary school-add-button"
+                onClick={() => setShowSchoolImportGuide(true)}
+              >
+                <BookOpen size={17} /> Panduan
+              </Button>
+              <Button
+                type="button"
+                className="button button-primary school-add-button"
+                onClick={() => setShowAddSchoolModal(true)}
+              >
+                <Plus size={17} strokeWidth={2.25} /> Tambah Sekolah
+              </Button>
+            </div>
           </div>
           <div className="monitoring-filter-bar">
             <label className="search-input monitoring-search">
@@ -998,6 +1041,8 @@ function Dashboard() {
                       <td>
                         <div className="user-name-cell">
                           <strong>{school.name}</strong>
+                          <span>{school.email || "Email belum diisi"}</span>
+                          <span>{school.phone || "Telepon belum diisi"}</span>
                         </div>
                       </td>
                       <td>
@@ -1048,6 +1093,17 @@ function Dashboard() {
                       </td>
                       <td>
                         <div className="action-buttons">
+                          <button
+                            className="btn-edit-user"
+                            onClick={() => handleSendSchoolTemporaryPassword(school)}
+                            disabled={sendingSchoolPasswordId === school.npsn}
+                            title="Generate dan kirim password sementara; sekolah wajib menggantinya saat login"
+                          >
+                            <KeyRound size={14} />
+                            {sendingSchoolPasswordId === school.npsn
+                              ? "Mengirim..."
+                              : school.password_change_required ? "Kirim password" : "Reset password"}
+                          </button>
                           <button
                             className="btn-edit-user"
                             onClick={() => handleOpenEditSchool(school)}
@@ -1451,7 +1507,7 @@ function Dashboard() {
                 <span className="school-create-icon"><GraduationCap size={20} /></span>
                 <div>
                   <h3>Tambah Sekolah</h3>
-                  <p>Daftarkan sekolah menggunakan NPSN.</p>
+                  <p>Daftarkan NPSN, email, dan nomor telepon sekolah.</p>
                 </div>
               </div>
               <button className="modal-close" disabled={isAddingSchool} onClick={() => setShowAddSchoolModal(false)}>
@@ -1492,7 +1548,37 @@ function Dashboard() {
                     disabled={isAddingSchool}
                   />
                 </div>
-                <div className="school-create-note"><CheckCircle2 size={17} /><span>Aplikasi kategori Pendidikan akan diberikan otomatis. Sekolah perlu memverifikasi email sebelum akses dibuka.</span></div>
+                <div className="form-group school-form-group">
+                  <label htmlFor="new-school-email">Email Sekolah</label>
+                  <input
+                    id="new-school-email"
+                    type="email"
+                    autoComplete="email"
+                    value={newSchoolEmail}
+                    onChange={(e) => setNewSchoolEmail(e.target.value)}
+                    placeholder="contoh: sekolah@email.com"
+                    required
+                    disabled={isAddingSchool}
+                  />
+                  <span>Email ini menerima password sementara dan kode verifikasi login.</span>
+                </div>
+                <div className="form-group school-form-group">
+                  <label htmlFor="new-school-phone">Nomor Telepon Sekolah</label>
+                  <input
+                    id="new-school-phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    maxLength={30}
+                    value={newSchoolPhone}
+                    onChange={(e) => setNewSchoolPhone(e.target.value)}
+                    placeholder="Contoh: +62 812-3456-7890"
+                    required
+                    disabled={isAddingSchool}
+                  />
+                  <span>Masukkan 8-15 digit nomor yang dapat dihubungi.</span>
+                </div>
+                <div className="school-create-note"><CheckCircle2 size={17} /><span>Aplikasi kategori Pendidikan diberikan otomatis. Sekolah menerima password sementara melalui email, lalu login dengan NPSN, password, dan kode verifikasi email. Password wajib diganti sebelum menggunakan portal.</span></div>
               </div>
               <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", padding: "16px 20px", borderTop: "1px solid var(--line)" }}>
                 <button type="button" className="btn-cancel" disabled={isAddingSchool} onClick={() => setShowAddSchoolModal(false)}>
@@ -1506,6 +1592,16 @@ function Dashboard() {
             </form>
           </div>
         </div>
+      )}
+
+      {showSchoolExcelModal && (
+        <SchoolExcelImportModal
+          onClose={() => setShowSchoolExcelModal(false)}
+          onImported={() => fetchSchools()}
+        />
+      )}
+      {showSchoolImportGuide && (
+        <SchoolImportGuideModal onClose={() => setShowSchoolImportGuide(false)} />
       )}
 
       {/* MODAL EDIT SEKOLAH */}
@@ -1552,6 +1648,25 @@ function Dashboard() {
                   <label style={{ margin: 0 }}>
                     Aplikasi yang Diizinkan ({editSchoolApps.length} dipilih)
                   </label>
+                  <div className="app-selection-actions">
+                    <button
+                      type="button"
+                      className="btn-text-action"
+                      onClick={handleSelectAllSchoolApps}
+                      disabled={isSavingSchool || availableApps.length === 0}
+                    >
+                      Pilih Semua
+                    </button>
+                    <span style={{ color: "var(--line)" }}>|</span>
+                    <button
+                      type="button"
+                      className="btn-text-action"
+                      onClick={handleClearAllSchoolApps}
+                      disabled={isSavingSchool || editSchoolApps.length === 0}
+                    >
+                      Hapus Semua
+                    </button>
+                  </div>
                 </div>
                 <div className="apps-checklist-grid">
                   {availableApps.map((app) => {

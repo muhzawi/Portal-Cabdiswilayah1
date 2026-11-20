@@ -24,6 +24,10 @@ function Login() {
 
   // State Login Sekolah
   const [npsn, setNpsn] = useState("");
+  const [schoolPassword, setSchoolPassword] = useState("");
+  const [schoolLoginStep, setSchoolLoginStep] = useState("npsn");
+  const [schoolCode, setSchoolCode] = useState("");
+  const [schoolLoginMessage, setSchoolLoginMessage] = useState("");
 
   // State Login Admin / Pegawai
   const [rememberMe, setRememberMe] = useState(() => {
@@ -49,21 +53,54 @@ function Login() {
 
   if (user) return <Navigate to="/dashboard" replace />;
 
+  const requestSchoolCode = async (cleanNpsn, password) => {
+    setIsLoading(true);
+    setError("");
+    setSchoolLoginMessage("");
+    try {
+      const response = await api.post("/auth/school-login", {
+        npsn: cleanNpsn,
+        password,
+      });
+      setNpsn(cleanNpsn);
+      setSchoolCode("");
+      setSchoolLoginStep("code");
+      setSchoolLoginMessage(response.data.message);
+    } catch (err) {
+      setError(err.response?.data?.error || "Kode login gagal dikirim.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSchoolSubmit = async (event) => {
     event.preventDefault();
     const cleanNpsn = npsn.trim();
     if (!/^\d{8}$/.test(cleanNpsn)) {
       return setError("NPSN harus berupa 8 digit angka.");
     }
+    await requestSchoolCode(cleanNpsn, schoolPassword);
+  };
+
+  const handleSchoolCodeSubmit = async (event) => {
+    event.preventDefault();
+    const cleanCode = schoolCode.trim();
+    if (!/^\d{6}$/.test(cleanCode)) {
+      return setError("Kode login harus terdiri dari 6 digit angka.");
+    }
+
     setIsLoading(true);
     setError("");
     try {
-      const response = await api.post("/auth/school-login", { npsn: cleanNpsn });
+      const response = await api.post("/auth/school-login/verify", {
+        npsn,
+        code: cleanCode,
+      });
       localStorage.setItem("portal_token", response.data.session.access_token);
       localStorage.setItem("portal_user", JSON.stringify(response.data.user));
       window.location.assign("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.error || "Gagal mengirim tautan verifikasi.");
+      setError(err.response?.data?.error || "Verifikasi kode login gagal.");
     } finally {
       setIsLoading(false);
     }
@@ -174,6 +211,7 @@ function Login() {
               onClick={() => {
                 setLoginMode("school");
                 setError("");
+                setSchoolLoginMessage("");
               }}
             >
               <GraduationCap size={18} />
@@ -185,6 +223,7 @@ function Login() {
               onClick={() => {
                 setLoginMode("admin");
                 setError("");
+                setSchoolLoginMessage("");
               }}
             >
               <UserCheck size={18} />
@@ -194,29 +233,66 @@ function Login() {
 
           {/* FORM LOGIN SEKOLAH (NPSN) */}
           {loginMode === "school" && (
-            <form onSubmit={handleSchoolSubmit}>
+            <form onSubmit={schoolLoginStep === "npsn" ? handleSchoolSubmit : handleSchoolCodeSubmit}>
               <div className="auth-info-box">
                 <Info size={18} style={{ flexShrink: 0, marginTop: 2 }} />
                 <span>
-                  Masukkan NPSN untuk masuk. Setelah itu, tambahkan email sekolah di dashboard untuk verifikasi.
+                  Masukkan NPSN dan password. Kode verifikasi akan dikirim ke email sekolah.
                 </span>
               </div>
 
-              <label>
-                NPSN Sekolah (8 Digit)
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={8}
-                  value={npsn}
-                  onChange={(e) =>
-                    setNpsn(e.target.value.replace(/\D/g, "").slice(0, 8))
-                  }
-                  placeholder="Contoh: 10261234"
-                  autoFocus
-                  required
-                />
-              </label>
+              {schoolLoginStep === "npsn" ? (
+                <>
+                  <label>
+                    NPSN Sekolah (8 Digit)
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={8}
+                      value={npsn}
+                      onChange={(e) =>
+                        setNpsn(e.target.value.replace(/\D/g, "").slice(0, 8))
+                      }
+                      placeholder="Contoh: 10261234"
+                      autoFocus
+                      required
+                    />
+                  </label>
+                  <label>
+                    Password
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      value={schoolPassword}
+                      onChange={(e) => setSchoolPassword(e.target.value)}
+                      placeholder="Masukkan password sekolah"
+                      required
+                    />
+                  </label>
+                </>
+              ) : (
+                <>
+                  <p className="auth-note">
+                    {schoolLoginMessage} Kode berlaku selama 5 menit.
+                  </p>
+                  <label>
+                    Kode verifikasi
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={schoolCode}
+                      onChange={(e) =>
+                        setSchoolCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                      }
+                      placeholder="Masukkan 6 digit kode"
+                      autoFocus
+                      required
+                    />
+                  </label>
+                </>
+              )}
 
               {error && <div className="form-error">{error}</div>}
 
@@ -226,19 +302,45 @@ function Login() {
                 style={{ marginTop: "8px" }}
               >
                 {isLoading ? (
-                  "Memeriksa..."
+                  "Memproses..."
                 ) : (
                   <>
-                    Masuk sebagai Sekolah <ArrowRight size={17} />
+                    {schoolLoginStep === "npsn" ? "Kirim kode ke email" : "Verifikasi dan masuk"}
+                    <ArrowRight size={17} />
                   </>
                 )}
               </Button>
+
+              {schoolLoginStep === "code" && (
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginTop: "12px" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSchoolLoginStep("npsn");
+                      setSchoolCode("");
+                      setSchoolLoginMessage("");
+                      setError("");
+                    }}
+                    style={{ border: 0, padding: 0, background: "transparent", color: "var(--green-700)", cursor: "pointer" }}
+                  >
+                    Ganti NPSN
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => requestSchoolCode(npsn, schoolPassword)}
+                    style={{ border: 0, padding: 0, background: "transparent", color: "var(--green-700)", cursor: "pointer" }}
+                  >
+                    Kirim ulang kode
+                  </button>
+                </div>
+              )}
 
               <p
                 className="auth-note"
                 style={{ marginTop: "16px", fontSize: "0.82rem" }}
               >
-                Setelah verifikasi email, akses aplikasi akan aktif setelah disetujui admin. {" "}
+                Setelah verifikasi email, akses aplikasi akan aktif setelah disetujui admin.{" "}
                 <span style={{ color: "var(--muted)", fontWeight: 500 }}>
                   Silakan hubungi administrator Cabang Dinas Wilayah 1.
                 </span>

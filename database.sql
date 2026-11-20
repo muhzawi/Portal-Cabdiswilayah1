@@ -1,0 +1,432 @@
+-- MySQL dump 10.13  Distrib 8.0.44, for Win64 (x86_64)
+--
+-- Host: localhost    Database: db_disdikbaru
+-- ------------------------------------------------------
+-- Server version	8.0.44
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `activity_logs`
+--
+
+DROP TABLE IF EXISTS `activity_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `activity_logs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `actor_id` varchar(191) DEFAULT NULL,
+  `action` varchar(80) NOT NULL,
+  `target_id` varchar(191) DEFAULT NULL,
+  `details` json DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_activity_created_at` (`created_at`),
+  KEY `idx_activity_actor` (`actor_id`),
+  KEY `idx_activity_target` (`target_id`),
+  CONSTRAINT `fk_activity_actor` FOREIGN KEY (`actor_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_activity_target` FOREIGN KEY (`target_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `activity_logs`
+--
+
+LOCK TABLES `activity_logs` WRITE;
+/*!40000 ALTER TABLE `activity_logs` DISABLE KEYS */;
+INSERT INTO `activity_logs` VALUES (1,'usr-1790242403755','user_rejected','usr-1790252152360',NULL,'2026-09-24 12:43:12'),(2,'usr-1790242403755','application_created',NULL,'{\"appId\": \"akademink\", \"appName\": \"akademink\"}','2026-09-24 13:01:51'),(3,'usr-1790242403755','login',NULL,NULL,'2026-10-09 11:35:30'),(4,'usr-1790242403755','login',NULL,NULL,'2026-11-15 08:32:56'),(5,'usr-1790242403755','school_created',NULL,'{\"name\": \"sd_sukasuka\"}','2026-11-15 08:33:45'),(6,'usr-1790242403755','login',NULL,NULL,'2026-11-15 08:40:04'),(7,'usr-1790242403755','school_updated',NULL,'{\"name\": \"sd_sukasuka\", \"status\": \"approved\"}','2026-11-15 08:40:18'),(8,'usr-1790242403755','school_app_access_changed',NULL,'{\"applicationIds\": [\"akademink\"]}','2026-11-15 08:40:18'),(9,'usr-1790242403755','school_deleted',NULL,'{\"npsn\": \"12345678\"}','2026-11-15 08:40:29'),(10,'usr-1790242403755','school_created',NULL,'{\"name\": \"sd_prabowoKOnt\", \"npsn\": \"12345678\"}','2026-11-15 08:41:19'),(11,'usr-1790242403755','login',NULL,NULL,'2026-11-20 08:56:45'),(13,'usr-1790242403755','login',NULL,NULL,'2026-11-20 08:59:50'),(14,'usr-1790242403755','school_updated',NULL,'{\"name\": \"sd_prabowoKOnt\", \"status\": \"approved\"}','2026-11-20 09:00:27'),(15,'usr-1790242403755','school_app_access_changed',NULL,'{\"applicationIds\": [\"akademink\"]}','2026-11-20 09:00:27'),(17,'usr-1790242403755','login',NULL,NULL,'2026-11-20 09:02:37'),(18,'usr-1790242403755','login',NULL,NULL,'2026-11-20 09:12:29'),(19,'usr-1790242403755','login',NULL,NULL,'2026-11-20 09:35:22'),(20,'usr-1790242403755','school_password_setup_link_sent',NULL,'{\"npsn\": \"12345678\"}','2026-11-20 09:36:40'),(21,'usr-1790242403755','login',NULL,NULL,'2026-11-20 09:47:43'),(22,'usr-1790242403755','school_temporary_password_sent',NULL,'{\"npsn\": \"12345678\"}','2026-11-20 09:48:02'),(24,'usr-1790242403755','login',NULL,NULL,'2026-11-20 09:52:01'),(25,'usr-1790242403755','school_updated',NULL,'{\"name\": \"sd_prabowoKOnt\", \"status\": \"approved\"}','2026-11-20 09:57:26'),(26,'usr-1790242403755','school_app_access_changed',NULL,'{\"applicationIds\": [\"akademink\"]}','2026-11-20 09:57:26'),(27,'usr-1790242403755','login',NULL,NULL,'2026-11-20 10:12:09'),(28,'usr-1790242403755','login',NULL,NULL,'2026-11-20 10:40:23'),(29,'usr-1790242403755','school_created',NULL,'{\"name\": \"testinguntuksekolah\", \"npsn\": \"12233445\"}','2026-11-20 10:40:35');
+/*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `applications`
+--
+
+DROP TABLE IF EXISTS `applications`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `applications` (
+  `id` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `category` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `status` enum('available','maintenance','offline') NOT NULL DEFAULT 'available',
+  `version` varchar(50) NOT NULL DEFAULT '1.0.0',
+  `url` varchar(500) NOT NULL,
+  `icon_url` mediumtext,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `chk_applications_url` CHECK (regexp_like(`url`,_utf8mb4'^https?://'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `applications`
+--
+
+LOCK TABLES `applications` WRITE;
+/*!40000 ALTER TABLE `applications` DISABLE KEYS */;
+INSERT INTO `applications` VALUES ('akademink','akademink','Administrasi','ini akan mengarah ke google','available','1.0','https://github.com/muhzawi/Portal-Disdikwilayah1/tree/refactor1/backend',NULL,'2026-09-24 13:01:51','2026-09-24 13:01:51');
+/*!40000 ALTER TABLE `applications` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `auth_sessions`
+--
+
+DROP TABLE IF EXISTS `auth_sessions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `auth_sessions` (
+  `id` char(36) NOT NULL,
+  `subject_type` enum('user','school') NOT NULL,
+  `subject_id` varchar(36) NOT NULL,
+  `last_activity_at` datetime(6) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_auth_sessions_subject` (`subject_type`,`subject_id`),
+  KEY `idx_auth_sessions_expires` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `auth_sessions`
+--
+
+LOCK TABLES `auth_sessions` WRITE;
+/*!40000 ALTER TABLE `auth_sessions` DISABLE KEYS */;
+INSERT INTO `auth_sessions` VALUES ('75cf19a4-8347-42b2-aa00-b9445cedd834','user','usr-1790242403755','2026-11-20 17:21:50.090448','2026-11-21 17:12:09','2026-11-20 10:12:09'),('934a523b-f411-49b6-8f39-d12f945e3923','user','usr-1790242403755','2026-11-20 17:40:40.328433','2026-11-21 17:40:23','2026-11-20 10:40:23'),('d1374581-6761-4e29-84fe-7a607112f75e','user','usr-1790242403755','2026-11-20 16:18:44.324633','2026-11-21 16:12:29','2026-11-20 09:12:29');
+/*!40000 ALTER TABLE `auth_sessions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `login_ip_attempts`
+--
+
+DROP TABLE IF EXISTS `login_ip_attempts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `login_ip_attempts` (
+  `ip_address` varchar(45) NOT NULL,
+  `failed_attempts` tinyint unsigned NOT NULL DEFAULT '0',
+  `window_started_at` datetime NOT NULL,
+  `blocked_until` datetime DEFAULT NULL,
+  PRIMARY KEY (`ip_address`),
+  KEY `idx_login_ip_attempts_window` (`window_started_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `login_ip_attempts`
+--
+
+LOCK TABLES `login_ip_attempts` WRITE;
+/*!40000 ALTER TABLE `login_ip_attempts` DISABLE KEYS */;
+INSERT INTO `login_ip_attempts` VALUES ('::1',0,'2026-11-20 17:40:23',NULL);
+/*!40000 ALTER TABLE `login_ip_attempts` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `password_reset_tokens`
+--
+
+DROP TABLE IF EXISTS `password_reset_tokens`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `password_reset_tokens` (
+  `token_hash` char(64) NOT NULL,
+  `user_id` varchar(36) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`token_hash`),
+  KEY `idx_password_reset_user_created` (`user_id`,`created_at`),
+  CONSTRAINT `fk_password_reset_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `password_reset_tokens`
+--
+
+LOCK TABLES `password_reset_tokens` WRITE;
+/*!40000 ALTER TABLE `password_reset_tokens` DISABLE KEYS */;
+/*!40000 ALTER TABLE `password_reset_tokens` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `school_application_access`
+--
+
+DROP TABLE IF EXISTS `school_application_access`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `school_application_access` (
+  `school_npsn` char(8) NOT NULL,
+  `application_id` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`school_npsn`,`application_id`),
+  KEY `idx_school_application_access_application` (`application_id`),
+  CONSTRAINT `fk_school_application_application` FOREIGN KEY (`application_id`) REFERENCES `applications` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_school_application_school` FOREIGN KEY (`school_npsn`) REFERENCES `schools` (`npsn`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `school_application_access`
+--
+
+LOCK TABLES `school_application_access` WRITE;
+/*!40000 ALTER TABLE `school_application_access` DISABLE KEYS */;
+INSERT INTO `school_application_access` VALUES ('12345678','akademink','2026-11-20 09:57:26');
+/*!40000 ALTER TABLE `school_application_access` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `school_email_verification_tokens`
+--
+
+DROP TABLE IF EXISTS `school_email_verification_tokens`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `school_email_verification_tokens` (
+  `token_hash` char(64) NOT NULL,
+  `school_npsn` char(8) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`token_hash`),
+  KEY `idx_school_verification_school_created` (`school_npsn`,`created_at`),
+  CONSTRAINT `fk_school_verification_school` FOREIGN KEY (`school_npsn`) REFERENCES `schools` (`npsn`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `school_email_verification_tokens`
+--
+
+LOCK TABLES `school_email_verification_tokens` WRITE;
+/*!40000 ALTER TABLE `school_email_verification_tokens` DISABLE KEYS */;
+/*!40000 ALTER TABLE `school_email_verification_tokens` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `school_login_codes`
+--
+
+DROP TABLE IF EXISTS `school_login_codes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `school_login_codes` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `school_npsn` char(8) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `request_ip` varchar(45) NOT NULL,
+  `code_hash` char(64) NOT NULL,
+  `failed_attempts` tinyint unsigned NOT NULL DEFAULT '0',
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_school_login_codes_school_created` (`school_npsn`,`created_at`),
+  KEY `idx_school_login_codes_ip_created` (`request_ip`,`created_at`),
+  KEY `idx_school_login_codes_expiry` (`expires_at`),
+  CONSTRAINT `fk_school_login_codes_school` FOREIGN KEY (`school_npsn`) REFERENCES `schools` (`npsn`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `school_login_codes`
+--
+
+LOCK TABLES `school_login_codes` WRITE;
+/*!40000 ALTER TABLE `school_login_codes` DISABLE KEYS */;
+INSERT INTO `school_login_codes` VALUES (2,'12345678','teguh.5233151037@mhs.unimed.ac.id','::1','6d1762ec97cf2eae220dad7918efb3f435871d62bf8e1cf4076020502dea99d6',0,'2026-11-20 16:02:58','2026-11-20 15:58:43','2026-11-20 08:57:58'),(3,'12345678','teguh.5233151037@mhs.unimed.ac.id','::1','3e76c19b3ba53adc7c2db36d44c33bc5341c9bbd6df05f09881657e9a929a971',0,'2026-11-20 16:06:16','2026-11-20 16:01:42','2026-11-20 09:01:16'),(4,'12345678','teguh.5233151037@mhs.unimed.ac.id','::1','4a99a2eeca16f42994c6b8f1c06bd6196a8789544cf7ca6358467816d07fd39d',0,'2026-11-20 16:54:04','2026-11-20 16:50:32','2026-11-20 09:49:04'),(5,'12345678','teguh.5233151037@mhs.unimed.ac.id','::1','5a939372f07eda007fbd9abe0142b6b11ac365a9cb839731591552a9d7028531',0,'2026-11-20 16:56:15',NULL,'2026-11-20 09:51:15');
+/*!40000 ALTER TABLE `school_login_codes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `school_task_recipients`
+--
+
+DROP TABLE IF EXISTS `school_task_recipients`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `school_task_recipients` (
+  `task_id` bigint unsigned NOT NULL,
+  `school_npsn` char(8) NOT NULL,
+  `status` enum('pending','completed') NOT NULL DEFAULT 'pending',
+  `completed_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`task_id`,`school_npsn`),
+  KEY `idx_school_task_recipients_school_status` (`school_npsn`,`status`),
+  CONSTRAINT `fk_school_task_recipients_school` FOREIGN KEY (`school_npsn`) REFERENCES `schools` (`npsn`) ON DELETE CASCADE,
+  CONSTRAINT `fk_school_task_recipients_task` FOREIGN KEY (`task_id`) REFERENCES `school_tasks` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `school_task_recipients`
+--
+
+LOCK TABLES `school_task_recipients` WRITE;
+/*!40000 ALTER TABLE `school_task_recipients` DISABLE KEYS */;
+INSERT INTO `school_task_recipients` VALUES (1,'12345678','completed','2026-11-20 15:59:13','2026-11-20 08:57:33'),(2,'12345678','pending',NULL,'2026-11-20 09:01:05');
+/*!40000 ALTER TABLE `school_task_recipients` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `school_tasks`
+--
+
+DROP TABLE IF EXISTS `school_tasks`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `school_tasks` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `created_by` varchar(36) DEFAULT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `application_id` varchar(255) DEFAULT NULL,
+  `target_url` varchar(2048) NOT NULL,
+  `attachment_name` varchar(255) DEFAULT NULL,
+  `attachment_mime` varchar(127) DEFAULT NULL,
+  `attachment_data` mediumblob,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_school_tasks_created` (`created_at`),
+  KEY `fk_school_tasks_creator` (`created_by`),
+  KEY `fk_school_tasks_application` (`application_id`),
+  CONSTRAINT `fk_school_tasks_application` FOREIGN KEY (`application_id`) REFERENCES `applications` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_school_tasks_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `school_tasks`
+--
+
+LOCK TABLES `school_tasks` WRITE;
+/*!40000 ALTER TABLE `school_tasks` DISABLE KEYS */;
+INSERT INTO `school_tasks` VALUES (1,'usr-1790242403755','hey antek antek asing','saya dapat informasi','akademink','https://github.com/muhzawi/Portal-Disdikwilayah1/tree/refactor1/backend',NULL,NULL,NULL,'2026-11-20 08:57:33'),(2,'usr-1790242403755','hey ada ular di sepatu mu','menuju tak terbatas dan melampauinya','akademink','https://github.com/muhzawi/Portal-Disdikwilayah1/tree/refactor1/backend',NULL,NULL,NULL,'2026-11-20 09:01:05');
+/*!40000 ALTER TABLE `school_tasks` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `schools`
+--
+
+DROP TABLE IF EXISTS `schools`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `schools` (
+  `npsn` char(8) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `password_change_required` tinyint(1) NOT NULL DEFAULT '1',
+  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'approved',
+  `email` varchar(255) DEFAULT NULL,
+  `phone` varchar(30) DEFAULT NULL,
+  `pending_email` varchar(255) DEFAULT NULL,
+  `email_verified_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`npsn`),
+  UNIQUE KEY `schools_email_unique` (`email`),
+  UNIQUE KEY `schools_pending_email_unique` (`pending_email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `schools`
+--
+
+LOCK TABLES `schools` WRITE;
+/*!40000 ALTER TABLE `schools` DISABLE KEYS */;
+INSERT INTO `schools` VALUES ('12233445','testinguntuksekolah','$2a$10$VWYF7BtCUwJ/Pc.qDsRcLuTnc00.pZgCndSLRJH77c1v/6G/N5os6',1,'approved','teguharif5505@gmail.com','0812345678',NULL,NULL,'2026-11-20 10:40:35','2026-11-20 10:40:35'),('12345678','sd_prabowoKOnt','$2a$10$npZHuMcEnEQd2hQphqzrMeqWlmikyjqJ7O/jwmxMNi3wuvZMZMQ62',0,'approved','teguh.5233151037@mhs.unimed.ac.id',NULL,NULL,'2026-11-15 15:46:07','2026-11-15 08:41:19','2026-11-20 09:50:52');
+/*!40000 ALTER TABLE `schools` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `user_application_access`
+--
+
+DROP TABLE IF EXISTS `user_application_access`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_application_access` (
+  `user_id` varchar(36) NOT NULL,
+  `application_id` varchar(255) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`,`application_id`),
+  KEY `application_id` (`application_id`),
+  CONSTRAINT `user_application_access_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `user_application_access_ibfk_2` FOREIGN KEY (`application_id`) REFERENCES `applications` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `user_application_access`
+--
+
+LOCK TABLES `user_application_access` WRITE;
+/*!40000 ALTER TABLE `user_application_access` DISABLE KEYS */;
+/*!40000 ALTER TABLE `user_application_access` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `users` (
+  `id` varchar(36) NOT NULL,
+  `full_name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `institution` varchar(255) NOT NULL DEFAULT '',
+  `nip` varchar(50) NOT NULL DEFAULT '',
+  `password` varchar(255) NOT NULL,
+  `role` enum('superadmin','admin','staff') NOT NULL DEFAULT 'staff',
+  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `users`
+--
+
+LOCK TABLES `users` WRITE;
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES ('usr-1790240617522','teguhtes','tesguh@gogo.com','','','$2a$10$lWe21Ib82OhNuNXawdqzCudxRZI/YdPFR5DEqxLc6TDk35Dvd1npK','staff','pending','2026-09-24 09:03:37','2026-09-24 09:17:56'),('usr-1790242225652','hidupJokowi','tes@gmail.go','','','$2a$10$iMTQ/LMNMNrX6eThskn0WulZoFfPu35u53fnA6dBGJg5G.rMWGJF2','staff','pending','2026-09-24 09:30:25','2026-09-24 09:30:25'),('usr-1790242403755','superadmin','superduper@admin.id','','','$2a$10$oag2W82c8FWuDDfaLISai.5tb93R7sJdBsyVyoxyVvRGHxH64QkzS','superadmin','approved','2026-09-24 09:33:23','2026-11-15 08:32:20'),('usr-1790252152360','tes','tesku@gmail.com','','','$2a$10$5mEZelfZQ2JkWlPKJ7oxjOWCI1Q5cp2T8MjlrxzzVguG4Ee5H.0cC','staff','approved','2026-09-24 12:15:52','2026-09-24 12:43:11');
+/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-11-20 17:44:51
