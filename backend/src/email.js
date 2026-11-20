@@ -87,7 +87,14 @@ export async function sendSchoolLoginCodeEmail({ to, schoolName, code }) {
   });
 }
 
-export async function sendSchoolAccountCreatedEmail({ to, schoolName, npsn, loginUrl }) {
+export async function sendSchoolTemporaryPasswordEmail({
+  to,
+  schoolName,
+  npsn,
+  password,
+  loginUrl,
+  isReset = false,
+}) {
   if (!isSmtpConfigured()) {
     throw new Error("SMTP belum dikonfigurasi.");
   }
@@ -97,18 +104,23 @@ export async function sendSchoolAccountCreatedEmail({ to, schoolName, npsn, logi
   await transporter.sendMail({
     from: smtpFrom,
     to,
-    subject: "Akun sekolah Portal Cabdiswilayah I telah dibuat",
+    subject: isReset
+      ? "Password sementara akun sekolah Portal Cabdiswilayah I"
+      : "Akun sekolah Portal Cabdiswilayah I telah dibuat",
     text: [
       `Halo ${schoolName || "Sekolah"},`,
       "",
-      "Akun sekolah Anda telah dibuat oleh administrator Portal Cabdiswilayah I.",
-      `NPSN: ${npsn}`,
+      isReset
+        ? "Administrator Portal Cabdiswilayah I telah mengatur ulang password akun sekolah Anda."
+        : "Akun sekolah Anda telah dibuat oleh administrator Portal Cabdiswilayah I.",
+      ...(npsn ? [`NPSN: ${npsn}`] : []),
       "",
-      "Untuk masuk, buka halaman login berikut:",
-      loginUrl,
+      `Password sementara: ${password}`,
       "",
-      "Pilih login Sekolah, masukkan NPSN, lalu masukkan kode sekali pakai yang dikirim ke alamat email ini.",
-      "Anda tidak memerlukan password sekolah. Kode login berlaku selama 5 menit.",
+      ...(loginUrl ? [`Masuk melalui: ${loginUrl}`, ""] : []),
+      "Masukkan NPSN dan password sementara. Kode verifikasi akan dikirim ke email ini dan berlaku selama 5 menit.",
+      "Setelah verifikasi kode, portal mewajibkan Anda membuat password baru sebelum membuka layanan.",
+      "Jangan bagikan password sementara ini. Setelah password baru dibuat, hapus email ini.",
       "",
       "Jika Anda tidak mengharapkan email ini, hubungi administrator portal.",
     ].join("\n"),

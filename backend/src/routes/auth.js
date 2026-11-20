@@ -192,13 +192,9 @@ router.post("/register", async (req, res, next) => {
 
 router.post("/school-login", async (req, res, next) => {
   const npsn = typeof req.body.npsn === "string" ? req.body.npsn.trim() : "";
-  if (!/^\d{8}$/.test(npsn)) {
-    return res.status(400).json({ error: "NPSN harus berupa 8 digit angka." });
-  }
-  if (!isSmtpConfigured()) {
-    return res.status(503).json({
-      error: "Layanan email belum dikonfigurasi. Hubungi administrator portal.",
-    });
+  const password = typeof req.body.password === "string" ? req.body.password : "";
+  if (!/^\d{8}$/.test(npsn) || !password || Buffer.byteLength(password, "utf8") > 72) {
+    return res.status(400).json({ error: "NPSN dan password wajib diisi dengan benar." });
   }
 
   try {
@@ -209,30 +205,66 @@ router.post("/school-login", async (req, res, next) => {
       });
     }
 
+    const [schools] = await db.query(
+      "SELECT npsn, name, email, status, password_hash FROM schools WHERE npsn = ?",
+      [npsn],
+    );
+    const school = schools[0];
+    if (!school) {
+      const blocked = await recordFailedLogin(clientIp);
+      return res.status(blocked ? 429 : 401).json({
+        error: blocked
+          ? "Terlalu banyak percobaan login gagal. IP diblokir selama 10 menit."
+          : "NPSN atau password salah.",
+      });
+    }
+    if (school.status === "rejected") {
+      return res.status(403).json({ error: "Akun sekolah ditolak. Hubungi administrator." });
+    }
+    const isPasswordValid = await bcrypt.compare(password, school.password_hash);
+    if (!isPasswordValid) {
+      const blocked = await recordFailedLogin(clientIp);
+      return res.status(blocked ? 429 : 401).json({
+        error: blocked
+          ? "Terlalu banyak percobaan login gagal. IP diblokir selama 10 menit."
+          : "NPSN atau password salah.",
+      });
+    }
+    if (!school.email) {
+      return res.status(409).json({
+        error: "Email sekolah belum terdaftar. Hubungi administrator untuk memperbarui data email.",
+      });
+    }
+    if (!isSmtpConfigured()) {
+      return res.status(503).json({
+        error: "Layanan email belum dikonfigurasi. Hubungi administrator portal.",
+      });
+    }
+
     const connection = await db.getConnection();
-    let school;
     let code;
     let codeId;
     try {
       await connection.beginTransaction();
-      const [schools] = await connection.query(
-        "SELECT npsn, name, email, status FROM schools WHERE npsn = ? FOR UPDATE",
+      const [lockedSchools] = await connection.query(
+        "SELECT npsn, name, email, status, password_hash FROM schools WHERE npsn = ? FOR UPDATE",
         [npsn],
       );
-      school = schools[0];
-      if (!school) {
-        await connection.rollback();
-        return res.status(404).json({ error: "NPSN belum terdaftar. Hubungi administrator." });
-      }
-      if (school.status === "rejected") {
+      const lockedSchool = lockedSchools[0];
+      if (lockedSchool?.status === "rejected") {
         await connection.rollback();
         return res.status(403).json({ error: "Akun sekolah ditolak. Hubungi administrator." });
       }
-      if (!school.email) {
+      if (
+        !lockedSchool
+        || lockedSchool.password_hash !== school.password_hash
+      ) {
         await connection.rollback();
-        return res.status(409).json({
-          error: "Email sekolah belum terdaftar. Hubungi administrator untuk memperbarui data email.",
-        });
+        return res.status(401).json({ error: "NPSN atau password salah." });
+      }
+      if (!lockedSchool.email) {
+        await connection.rollback();
+        return res.status(409).json({ error: "Email sekolah belum terdaftar. Hubungi administrator untuk memperbarui data email." });
       }
 
       const [attempts] = await connection.query(
@@ -268,6 +300,8 @@ router.post("/school-login", async (req, res, next) => {
         "DELETE FROM school_login_codes WHERE created_at < DATE_SUB(NOW(), INTERVAL 1 DAY)",
       );
       await connection.commit();
+      school.email = lockedSchool.email;
+      school.name = lockedSchool.name;
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -316,7 +350,7 @@ router.post("/school-login/verify", async (req, res, next) => {
   try {
     await connection.beginTransaction();
     const [schools] = await connection.query(
-      "SELECT npsn, name, email, status FROM schools WHERE npsn = ? FOR UPDATE",
+      "SELECT npsn, name, email, status, password_change_required FROM schools WHERE npsn = ? FOR UPDATE",
       [npsn],
     );
     const school = schools[0];
@@ -395,6 +429,7 @@ router.post("/school-login/verify", async (req, res, next) => {
         status: school.status,
         email: school.email,
         emailVerified: true,
+        passwordChangeRequired: Boolean(school.password_change_required),
       },
     });
   } catch (error) {
@@ -518,7 +553,7 @@ router.post("/school/verify", async (req, res, next) => {
 
     const { school_npsn: npsn, email } = tokens[0];
     const [schools] = await connection.query(
-      "SELECT npsn, name, status, pending_email FROM schools WHERE npsn = ? FOR UPDATE",
+      "SELECT npsn, name, status, pending_email, password_change_required FROM schools WHERE npsn = ? FOR UPDATE",
       [npsn],
     );
     const school = schools[0];
@@ -543,6 +578,11 @@ router.post("/school/verify", async (req, res, next) => {
     if (school.status !== "approved") {
       return res.status(403).json({ error: "Akses sekolah belum disetujui admin." });
     }
+    if (school.password_change_required) {
+      return res.status(403).json({
+        error: "Email terverifikasi. Masuk dengan NPSN dan password sementara untuk melanjutkan.",
+      });
+    }
 
     const token = await createAuthSessionToken(
       { npsn: school.npsn, name: school.name, role: "school_user", type: "school" },
@@ -560,6 +600,7 @@ router.post("/school/verify", async (req, res, next) => {
         role: "school_user",
         type: "school",
         status: school.status,
+        passwordChangeRequired: false,
       },
     });
   } catch (error) {
@@ -718,6 +759,62 @@ router.post("/reset-password", requireAuth, async (req, res, next) => {
     res.json({ message: "Password berhasil diperbarui." });
   } catch (error) {
     next(error);
+  }
+});
+
+router.post("/school/change-password", requireAuth, async (req, res, next) => {
+  if (req.user?.type !== "school") {
+    return res.status(403).json({ error: "Endpoint ini hanya untuk akun sekolah." });
+  }
+  const { newPassword, confirmPassword } = req.body;
+  if (
+    typeof newPassword !== "string"
+    || newPassword.length < 8
+    || Buffer.byteLength(newPassword, "utf8") > 72
+  ) {
+    return res.status(400).json({ error: "Password baru harus berisi 8-72 byte." });
+  }
+  if (confirmPassword !== newPassword) {
+    return res.status(400).json({ error: "Konfirmasi password tidak cocok." });
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [schools] = await connection.query(
+      "SELECT password_change_required FROM schools WHERE npsn = ? FOR UPDATE",
+      [req.user.npsn],
+    );
+    if (!schools[0] || !schools[0].password_change_required) {
+      await connection.rollback();
+      return res.status(409).json({ error: "Akun ini tidak memerlukan penggantian password pertama." });
+    }
+
+    await connection.query(
+      "UPDATE schools SET password_hash = ?, password_change_required = 0 WHERE npsn = ?",
+      [passwordHash, req.user.npsn],
+    );
+    await connection.query(
+      "UPDATE school_login_codes SET used_at = NOW() WHERE school_npsn = ? AND used_at IS NULL",
+      [req.user.npsn],
+    );
+    await connection.query(
+      "DELETE FROM auth_sessions WHERE subject_type = 'school' AND subject_id = ? AND id <> ?",
+      [req.user.npsn, req.authSessionId],
+    );
+    await connection.commit();
+    await writeAuditLog({
+      actorId: req.user.npsn,
+      action: "school_password_changed",
+      details: { npsn: req.user.npsn },
+    });
+    res.json({ message: "Password berhasil diganti. Anda dapat menggunakan portal." });
+  } catch (error) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
   }
 });
 

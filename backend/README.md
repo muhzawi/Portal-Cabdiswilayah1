@@ -8,8 +8,9 @@ Role yang digunakan:
 - `super_user`: dapat mengakses seluruh aplikasi dan mengelola user/aplikasi.
 - `medium_user`: hanya dapat mengakses aplikasi yang ada di
   `user_application_access`.
-- `school_user`: login menggunakan NPSN dan kode sekali pakai yang dikirim ke
-  email sekolah; akses aplikasi memerlukan email terverifikasi dan persetujuan admin.
+- `school_user`: login menggunakan NPSN, password, dan kode sekali pakai yang
+  dikirim ke email sekolah; password sementara wajib diganti setelah OTP login pertama.
+  Akses aplikasi juga memerlukan email terverifikasi dan persetujuan admin.
 
 ## Menjalankan
 
@@ -27,15 +28,23 @@ Role yang digunakan:
 6. Jalankan `mysql/005_create_school_login_codes.sql` untuk tabel kode login sekolah.
 7. Jalankan `mysql/006_create_school_tasks.sql` untuk tabel tugas dan notifikasi sekolah.
 8. Jalankan `mysql/007_add_school_phone.sql` untuk menambahkan nomor telepon sekolah.
-9. Isi konfigurasi SMTP di bawah ini untuk mengaktifkan email login, reset password,
+9. Jalankan `mysql/008_school_password_setup.sql` untuk mengakhiri sesi sekolah
+   lama dan menambahkan kolom status password.
+10. Jalankan `mysql/009_school_temporary_passwords.sql` untuk mewajibkan password
+    sementara diganti setelah login pertama.
+11. Isi konfigurasi SMTP di bawah ini untuk mengaktifkan email login, reset password,
    dan verifikasi email sekolah.
-10. Jalankan `npm install` dan `npm run dev` dari folder `backend`.
+12. Jalankan `npm install` dan `npm run dev` dari folder `backend`.
 
-Kode login sekolah berlaku 5 menit, dibatasi 3 permintaan per 15 menit per NPSN
+Superadmin mengirim password sementara acak melalui email saat membuat akun
+sekolah atau saat mengatur ulang password dari daftar sekolah. Setelah NPSN dan
+password benar, portal mengirim OTP. Setelah OTP diverifikasi, sekolah wajib
+membuat password baru sebelum membuka portal. Kode login sekolah berlaku 5
+menit, dibatasi 3 permintaan per 15 menit per NPSN
 (maksimal 10 permintaan per IP), dan hanya dapat dicoba 5 kali. Sekolah harus
 memiliki email terdaftar. Super user mengisi email saat membuat akun; portal
-mengirim pemberitahuan pembuatan akun ke alamat itu. Kode OTP pertama akan
-memverifikasi email tersebut. Login staf dan sekolah diblokir selama 10 menit
+mengirim password sementara ke alamat itu. Kode OTP pertama akan memverifikasi
+email tersebut. Migrasi 008 mengakhiri sesi sekolah lama. Login staf dan sekolah diblokir selama 10 menit
 setelah 5 kegagalan dari IP yang sama. Sesi berakhir setelah 10 menit tanpa
 aktivitas dan maksimal 24 jam.
 Jika aplikasi berjalan di belakang reverse proxy, atur `TRUST_PROXY` hanya
@@ -52,14 +61,17 @@ Endpoint utama:
 - `GET /api/activity-logs` (superadmin)
 - `GET /api/apps`, `GET /api/apps/:id`, `GET /api/apps/:id/redirect`
 - `POST /api/apps` (admin/superadmin), `PATCH /api/apps/:id` dan `DELETE /api/apps/:id` (superadmin)
-- `POST /auth/school-login` (minta kode via NPSN), `POST /auth/school-login/verify`
-  (verifikasi kode), `POST /auth/school/request-link`, dan
+- `POST /auth/school-login` (NPSN + password, lalu minta kode OTP),
+  `POST /auth/school-login/verify` (verifikasi kode),
+  `POST /auth/school/change-password` (wajib setelah login pertama),
+  `POST /auth/school/request-link`, dan
   `POST /auth/school/verify` untuk login serta verifikasi email sekolah
 - `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`,
   `DELETE /api/schools/:npsn`, dan
-  `PUT /api/schools/:npsn/app-access` untuk pengelolaan sekolah oleh super user
+  `PUT /api/schools/:npsn/app-access` serta
+  `POST /api/schools/:npsn/send-temporary-password` untuk pengelolaan sekolah oleh super user
   (`POST /api/schools` menerima `npsn`, `name`, `email`, dan `phone`; email
-  pemberitahuan dikirim ke alamat sekolah).
+  password sementara dikirim ke alamat sekolah).
 - `/api/school-tasks` untuk membuat tugas ke semua sekolah aktif, melihat tugas,
   mengunduh lampiran, dan menandai tugas selesai (super user/sekolah sesuai endpoint)
 

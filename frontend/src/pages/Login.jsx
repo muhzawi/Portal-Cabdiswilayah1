@@ -24,6 +24,7 @@ function Login() {
 
   // State Login Sekolah
   const [npsn, setNpsn] = useState("");
+  const [schoolPassword, setSchoolPassword] = useState("");
   const [schoolLoginStep, setSchoolLoginStep] = useState("npsn");
   const [schoolCode, setSchoolCode] = useState("");
   const [schoolLoginMessage, setSchoolLoginMessage] = useState("");
@@ -52,13 +53,14 @@ function Login() {
 
   if (user) return <Navigate to="/dashboard" replace />;
 
-  const requestSchoolCode = async (cleanNpsn) => {
+  const requestSchoolCode = async (cleanNpsn, password) => {
     setIsLoading(true);
     setError("");
     setSchoolLoginMessage("");
     try {
       const response = await api.post("/auth/school-login", {
         npsn: cleanNpsn,
+        password,
       });
       setNpsn(cleanNpsn);
       setSchoolCode("");
@@ -77,7 +79,7 @@ function Login() {
     if (!/^\d{8}$/.test(cleanNpsn)) {
       return setError("NPSN harus berupa 8 digit angka.");
     }
-    await requestSchoolCode(cleanNpsn);
+    await requestSchoolCode(cleanNpsn, schoolPassword);
   };
 
   const handleSchoolCodeSubmit = async (event) => {
@@ -235,26 +237,39 @@ function Login() {
               <div className="auth-info-box">
                 <Info size={18} style={{ flexShrink: 0, marginTop: 2 }} />
                 <span>
-                  Masuk menggunakan NPSN dan kode verifikasi yang dikirim ke email sekolah.
+                  Masukkan NPSN dan password. Kode verifikasi akan dikirim ke email sekolah.
                 </span>
               </div>
 
               {schoolLoginStep === "npsn" ? (
-                <label>
-                  NPSN Sekolah (8 Digit)
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={8}
-                    value={npsn}
-                    onChange={(e) =>
-                      setNpsn(e.target.value.replace(/\D/g, "").slice(0, 8))
-                    }
-                    placeholder="Contoh: 10261234"
-                    autoFocus
-                    required
-                  />
-                </label>
+                <>
+                  <label>
+                    NPSN Sekolah (8 Digit)
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={8}
+                      value={npsn}
+                      onChange={(e) =>
+                        setNpsn(e.target.value.replace(/\D/g, "").slice(0, 8))
+                      }
+                      placeholder="Contoh: 10261234"
+                      autoFocus
+                      required
+                    />
+                  </label>
+                  <label>
+                    Password
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      value={schoolPassword}
+                      onChange={(e) => setSchoolPassword(e.target.value)}
+                      placeholder="Masukkan password sekolah"
+                      required
+                    />
+                  </label>
+                </>
               ) : (
                 <>
                   <p className="auth-note">
@@ -313,7 +328,7 @@ function Login() {
                   <button
                     type="button"
                     disabled={isLoading}
-                    onClick={() => requestSchoolCode(npsn)}
+                    onClick={() => requestSchoolCode(npsn, schoolPassword)}
                     style={{ border: 0, padding: 0, background: "transparent", color: "var(--green-700)", cursor: "pointer" }}
                   >
                     Kirim ulang kode
@@ -325,7 +340,7 @@ function Login() {
                 className="auth-note"
                 style={{ marginTop: "16px", fontSize: "0.82rem" }}
               >
-                Setelah verifikasi email, akses aplikasi akan aktif setelah disetujui admin. {" "}
+                Setelah verifikasi email, akses aplikasi akan aktif setelah disetujui admin.{" "}
                 <span style={{ color: "var(--muted)", fontWeight: 500 }}>
                   Silakan hubungi administrator Cabang Dinas Wilayah 1.
                 </span>

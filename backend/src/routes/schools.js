@@ -1,19 +1,23 @@
 import { Router } from "express";
-import { randomUUID } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import db from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { writeAuditLog } from "../audit.js";
-import { isSmtpConfigured, sendSchoolAccountCreatedEmail } from "../email.js";
+import { isSmtpConfigured, sendSchoolTemporaryPasswordEmail } from "../email.js";
 
 const router = Router();
 
 router.use(requireAuth, requireRole("super_user"));
 
+function generateTemporaryPassword() {
+  return randomBytes(16).toString("hex");
+}
+
 router.get("/", async (_req, res, next) => {
   try {
     const [schools] = await db.query(
-      "SELECT npsn, name, email, phone, email_verified_at, status, created_at, updated_at FROM schools ORDER BY created_at DESC",
+      "SELECT npsn, name, email, phone, password_change_required, email_verified_at, status, created_at, updated_at FROM schools ORDER BY created_at DESC",
     );
     const [accessRows] = await db.query(
       "SELECT school_npsn, application_id FROM school_application_access",
@@ -68,6 +72,7 @@ router.post("/", async (req, res, next) => {
 
   const connection = await db.getConnection();
   let educationApps;
+  const temporaryPassword = generateTemporaryPassword();
   try {
     await connection.beginTransaction();
     const [existing] = await connection.query(
@@ -88,9 +93,9 @@ router.post("/", async (req, res, next) => {
       return res.status(409).json({ error: "Email sudah digunakan oleh sekolah lain." });
     }
 
-    const passwordHash = await bcrypt.hash(randomUUID(), 10);
+    const passwordHash = await bcrypt.hash(temporaryPassword, 10);
     await connection.query(
-      "INSERT INTO schools (npsn, name, password_hash, status, email, phone) VALUES (?, ?, ?, 'approved', ?, ?)",
+      "INSERT INTO schools (npsn, name, password_hash, password_change_required, status, email, phone) VALUES (?, ?, ?, 1, 'approved', ?, ?)",
       [npsn, name, passwordHash, email, phone],
     );
     [educationApps] = await connection.query(
@@ -111,19 +116,20 @@ router.post("/", async (req, res, next) => {
     });
 
     let notificationSent = true;
-    let message = `Akun sekolah ${name} berhasil dibuat. Email pemberitahuan dikirim ke alamat sekolah.`;
+    let message = `Akun sekolah ${name} berhasil dibuat. Password sementara dikirim ke email sekolah.`;
     try {
       const loginUrl = new URL("/login", process.env.FRONTEND_URL || "http://localhost:5173");
-      await sendSchoolAccountCreatedEmail({
+      await sendSchoolTemporaryPasswordEmail({
         to: email,
         schoolName: name,
         npsn,
+        password: temporaryPassword,
         loginUrl: loginUrl.toString(),
       });
     } catch (error) {
       notificationSent = false;
-      message = "Akun sekolah berhasil dibuat, tetapi email pemberitahuan gagal dikirim. Periksa konfigurasi SMTP.";
-      console.error("Email pemberitahuan akun sekolah gagal dikirim:", error.message);
+      message = "Akun sekolah berhasil dibuat, tetapi email password sementara gagal dikirim. Kirim ulang password dari daftar sekolah.";
+      console.error("Email password sementara sekolah gagal dikirim:", error.message);
     }
 
     res.status(201).json({
@@ -134,6 +140,7 @@ router.post("/", async (req, res, next) => {
         name,
         email,
         phone,
+        password_change_required: true,
         status: "approved",
         app_access: educationApps.map(({ id }) => id),
       },
@@ -144,6 +151,80 @@ router.post("/", async (req, res, next) => {
   } finally {
     connection.release();
   }
+});
+
+router.post("/:npsn/send-temporary-password", async (req, res, next) => {
+  const { npsn } = req.params;
+  if (!/^\d{8}$/.test(npsn)) {
+    return res.status(400).json({ error: "NPSN tidak valid." });
+  }
+  if (!isSmtpConfigured()) {
+    return res.status(503).json({ error: "Layanan email belum dikonfigurasi. Hubungi administrator portal." });
+  }
+
+  let school;
+  let temporaryPassword;
+  const isReset = true;
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [schools] = await connection.query(
+      "SELECT npsn, name, email FROM schools WHERE npsn = ? FOR UPDATE",
+      [npsn],
+    );
+    school = schools[0];
+    if (!school) {
+      await connection.rollback();
+      return res.status(404).json({ error: "Sekolah tidak ditemukan." });
+    }
+    if (!school.email) {
+      await connection.rollback();
+      return res.status(409).json({ error: "Email sekolah belum terdaftar." });
+    }
+
+    temporaryPassword = generateTemporaryPassword();
+    const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+    await connection.query(
+      "UPDATE schools SET password_hash = ?, password_change_required = 1 WHERE npsn = ?",
+      [passwordHash, npsn],
+    );
+    await connection.query(
+      "UPDATE school_login_codes SET used_at = NOW() WHERE school_npsn = ? AND used_at IS NULL",
+      [npsn],
+    );
+    await connection.query(
+      "DELETE FROM auth_sessions WHERE subject_type = 'school' AND subject_id = ?",
+      [npsn],
+    );
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    return next(error);
+  } finally {
+    connection.release();
+  }
+
+  try {
+    await sendSchoolTemporaryPasswordEmail({
+      to: school.email,
+      schoolName: school.name,
+      npsn,
+      password: temporaryPassword,
+      isReset,
+    });
+  } catch (error) {
+    console.error("Email password sementara sekolah gagal dikirim:", error.message);
+    return res.status(503).json({
+      error: "Email password sementara gagal dikirim. Periksa konfigurasi SMTP, lalu kirim ulang.",
+    });
+  }
+
+  await writeAuditLog({
+    actorId: req.user.id,
+    action: "school_temporary_password_sent",
+    details: { npsn },
+  });
+  res.json({ message: "Password sementara berhasil dikirim ke email sekolah. Password baru wajib dibuat setelah login." });
 });
 
 router.patch("/:npsn", async (req, res, next) => {
@@ -200,19 +281,35 @@ router.patch("/:npsn/reset-password", async (req, res, next) => {
   if (!/^\d{8}$/.test(npsn)) {
     return res.status(400).json({ error: "NPSN tidak valid." });
   }
-  if (typeof password !== "string" || password.length < 6) {
-    return res.status(400).json({ error: "Password baru minimal 6 karakter." });
+  if (
+    typeof password !== "string"
+    || password.length < 8
+    || Buffer.byteLength(password, "utf8") > 72
+  ) {
+    return res.status(400).json({ error: "Password baru harus 8-72 byte." });
   }
 
+  const connection = await db.getConnection();
   try {
     const passwordHash = await bcrypt.hash(password, 10);
-    const [result] = await db.query(
-      "UPDATE schools SET password_hash = ? WHERE npsn = ?",
+    await connection.beginTransaction();
+    const [result] = await connection.query(
+      "UPDATE schools SET password_hash = ?, password_change_required = 1 WHERE npsn = ?",
       [passwordHash, npsn],
     );
     if (result.affectedRows === 0) {
+      await connection.rollback();
       return res.status(404).json({ error: "Sekolah tidak ditemukan." });
     }
+    await connection.query(
+      "UPDATE school_login_codes SET used_at = NOW() WHERE school_npsn = ? AND used_at IS NULL",
+      [npsn],
+    );
+    await connection.query(
+      "DELETE FROM auth_sessions WHERE subject_type = 'school' AND subject_id = ?",
+      [npsn],
+    );
+    await connection.commit();
     await writeAuditLog({
       actorId: req.user.id,
       action: "school_password_reset",
@@ -220,7 +317,10 @@ router.patch("/:npsn/reset-password", async (req, res, next) => {
     });
     res.json({ message: "Password sekolah berhasil direset." });
   } catch (error) {
+    await connection.rollback();
     next(error);
+  } finally {
+    connection.release();
   }
 });
 

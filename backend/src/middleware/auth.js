@@ -2,6 +2,13 @@ import jwt from "jsonwebtoken";
 import db from "../db.js";
 import { JWT_SECRET } from "../config/jwt.js";
 
+const allowedDuringSchoolPasswordChange = new Set([
+  "/auth/school/change-password",
+  "/api/auth/school/change-password",
+  "/auth/logout",
+  "/api/auth/logout",
+]);
+
 export const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -38,7 +45,7 @@ export const requireAuth = async (req, res, next) => {
 
     if (isSchool) {
       const [schools] = await db.query(
-        "SELECT npsn, name, email, status, email_verified_at FROM schools WHERE npsn = ?",
+        "SELECT npsn, name, email, status, email_verified_at, password_change_required FROM schools WHERE npsn = ?",
         [decoded.npsn],
       );
       const school = schools[0];
@@ -55,7 +62,18 @@ export const requireAuth = async (req, res, next) => {
         type: "school",
         status: school.status,
         emailVerified: Boolean(school.email_verified_at),
+        passwordChangeRequired: Boolean(school.password_change_required),
       };
+      const requestPath = req.originalUrl.split("?")[0];
+      if (
+        req.user.passwordChangeRequired
+        && !allowedDuringSchoolPasswordChange.has(requestPath)
+      ) {
+        return res.status(403).json({
+          error: "Ganti password sementara Anda sebelum menggunakan portal.",
+          passwordChangeRequired: true,
+        });
+      }
       return next();
     }
 

@@ -1,11 +1,12 @@
 import React from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AppProvider, useApp } from "./context/AppContext";
 import "./App.css";
 
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import SchoolVerify from "./pages/SchoolVerify";
+import SchoolPasswordChange from "./pages/SchoolPasswordChange";
 import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
@@ -19,6 +20,18 @@ import SchoolTasks from "./pages/SchoolTasks";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 function ProtectedApp() {
+  const { user } = useApp();
+  const location = useLocation();
+  const isSchoolPasswordChangePath = location.pathname === "/school/change-password";
+  if (user?.type === "school" && user.passwordChangeRequired) {
+    return isSchoolPasswordChangePath
+      ? <div className="app"><SchoolPasswordChange /></div>
+      : <Navigate to="/school/change-password" replace />;
+  }
+  if (user?.type === "school" && !user.passwordChangeRequired && isSchoolPasswordChangePath) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="app">
       <DashboardLayout>

@@ -146,7 +146,27 @@ mysql -u root -p portal_cabdiswilayah1 < backend/mysql/006_create_school_tasks.s
 mysql -u root -p portal_cabdiswilayah1 < backend/mysql/007_add_school_phone.sql
 ```
 
-9. Pastikan tabel berikut tersedia:
+9. Jalankan migrasi status password sekolah:
+
+```bash
+mysql -u root -p portal_cabdiswilayah1 < backend/mysql/008_school_password_setup.sql
+```
+
+10. Jalankan migrasi password sementara sekolah:
+
+```bash
+mysql -u root -p portal_cabdiswilayah1 < backend/mysql/009_school_temporary_passwords.sql
+```
+
+Pastikan setiap sekolah memiliki email yang dapat diakses. Saat superadmin
+membuat akun, portal mengirim password sementara acak ke email tersebut.
+Sekolah login dengan NPSN dan password sementara; kode OTP dikirim ke email
+terdaftar dan berlaku 5 menit. Setelah OTP diverifikasi, sekolah wajib membuat
+password baru sebelum dapat menggunakan portal. Untuk sekolah lama, superadmin
+dapat mengirim password sementara baru dari daftar akun sekolah. Migrasi 008
+mengakhiri sesi sekolah lama agar semua sekolah masuk kembali melalui alur ini.
+
+11. Pastikan tabel berikut tersedia:
 
    - `users`
    - `applications`
@@ -266,8 +286,9 @@ Authorization: Bearer <jwt_token>
 - `POST /auth/reset-password` - ganti password dengan validasi password lama.
 - `GET /auth/me` - mengambil data user aktif.
 - `POST /auth/logout` - logout stateless.
-- `POST /auth/school-login` - mengirim kode login ke email terdaftar menggunakan NPSN.
+- `POST /auth/school-login` - memeriksa NPSN dan password, lalu mengirim kode login ke email terdaftar.
 - `POST /auth/school-login/verify` - memverifikasi kode login sekolah dan membuat sesi.
+- `POST /auth/school/change-password` - mengganti password sementara setelah login sekolah pertama.
 - `POST /auth/school/request-link` - mengirim tautan verifikasi ke email sekolah.
 - `POST /auth/school/verify` - memverifikasi email sekolah menggunakan token sekali pakai.
 

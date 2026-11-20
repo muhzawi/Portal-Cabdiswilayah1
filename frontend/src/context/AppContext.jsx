@@ -76,11 +76,18 @@ export function AppProvider({ children }) {
       institution: userData.name,
       status: userData.status,
       emailVerified: Boolean(userData.emailVerified),
+      passwordChangeRequired: Boolean(userData.passwordChangeRequired),
     };
     localStorage.setItem("portal_token", session.access_token);
     setUser(nextUser);
     persist("portal_user", nextUser);
   }, []);
+
+  const completeSchoolPasswordChange = (currentUser) => {
+    const nextUser = { ...currentUser, passwordChangeRequired: false };
+    setUser(nextUser);
+    persist("portal_user", nextUser);
+  };
 
   const logout = useCallback(() => {
     const token = localStorage.getItem("portal_token");
@@ -171,7 +178,8 @@ export function AppProvider({ children }) {
     <AppContext.Provider
       value={{
         user, theme, setTheme, favorites, recent, apps, isLoadingApps, appsError,
-        login, completeSchoolLogin, logout, toggleFavorite, addRecent, refreshApps, updateUser
+        login, completeSchoolLogin, completeSchoolPasswordChange, logout,
+        toggleFavorite, addRecent, refreshApps, updateUser
       }}
     >
       {children}

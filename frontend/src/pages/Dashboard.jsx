@@ -17,7 +17,7 @@ import {
   Pencil,
   Save,
   GraduationCap,
-  Key,
+  KeyRound,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import AppCard from "../components/AppCard";
@@ -75,10 +75,7 @@ function Dashboard() {
   const [editSchoolApps, setEditSchoolApps] = useState([]);
   const [isSavingSchool, setIsSavingSchool] = useState(false);
   
-  // Modal Reset Password
-  const [resetSchool, setResetSchool] = useState(null);
-  const [resetPasswordVal, setResetPasswordVal] = useState("");
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [sendingSchoolPasswordId, setSendingSchoolPasswordId] = useState("");
   
   // Modal Hapus Sekolah
   const [deletingSchool, setDeletingSchool] = useState(null);
@@ -248,25 +245,23 @@ function Dashboard() {
     }
   };
 
-  // Handler: Reset Password
-  const handleResetPassword = async (e) => {
-    e.preventDefault();
-    if (!resetPasswordVal.trim()) {
-      alert("Password baru tidak boleh kosong.");
-      return;
-    }
-    setIsResettingPassword(true);
+  const handleSendSchoolTemporaryPassword = async (school) => {
+    const action = school.password_change_required
+      ? "mengirim ulang password sementara"
+      : "mereset password dan mengeluarkan sesi sekolah yang sedang aktif";
+    if (!window.confirm(`Lanjutkan ${action} untuk ${school.name}?`)) return;
+
+    setSendingSchoolPasswordId(school.npsn);
     try {
-      const res = await api.patch(`/api/schools/${resetSchool.npsn}/reset-password`, {
-        password: resetPasswordVal.trim(),
-      });
-      setToastMessage(res.data?.message || `Password sekolah ${resetSchool.name} berhasil direset!`);
-      setResetSchool(null);
-      setResetPasswordVal("");
+      const { data } = await api.post(
+        `/api/schools/${school.npsn}/send-temporary-password`,
+      );
+      setToastMessage(data?.message || "Password sementara dikirim ke email sekolah.");
+      fetchSchools();
     } catch (err) {
-      alert(err.response?.data?.error || "Gagal mereset password.");
+      alert(err.response?.data?.error || "Gagal mengirim password sementara.");
     } finally {
-      setIsResettingPassword(false);
+      setSendingSchoolPasswordId("");
     }
   };
 
@@ -1068,6 +1063,17 @@ function Dashboard() {
                         <div className="action-buttons">
                           <button
                             className="btn-edit-user"
+                            onClick={() => handleSendSchoolTemporaryPassword(school)}
+                            disabled={sendingSchoolPasswordId === school.npsn}
+                            title="Generate dan kirim password sementara; sekolah wajib menggantinya saat login"
+                          >
+                            <KeyRound size={14} />
+                            {sendingSchoolPasswordId === school.npsn
+                              ? "Mengirim..."
+                              : school.password_change_required ? "Kirim password" : "Reset password"}
+                          </button>
+                          <button
+                            className="btn-edit-user"
                             onClick={() => handleOpenEditSchool(school)}
                             title="Edit Sekolah"
                           >
@@ -1522,7 +1528,7 @@ function Dashboard() {
                     required
                     disabled={isAddingSchool}
                   />
-                  <span>Email ini menerima pemberitahuan akun dibuat dan kode OTP untuk login.</span>
+                  <span>Email ini menerima password sementara dan kode verifikasi login.</span>
                 </div>
                 <div className="form-group school-form-group">
                   <label htmlFor="new-school-phone">Nomor Telepon Sekolah</label>
@@ -1540,7 +1546,7 @@ function Dashboard() {
                   />
                   <span>Masukkan 8-15 digit nomor yang dapat dihubungi.</span>
                 </div>
-                <div className="school-create-note"><CheckCircle2 size={17} /><span>Aplikasi kategori Pendidikan diberikan otomatis. Sekolah login menggunakan NPSN dan kode sekali pakai; tidak ada password sekolah.</span></div>
+                <div className="school-create-note"><CheckCircle2 size={17} /><span>Aplikasi kategori Pendidikan diberikan otomatis. Sekolah menerima password sementara melalui email, lalu login dengan NPSN, password, dan kode verifikasi email. Password wajib diganti sebelum menggunakan portal.</span></div>
               </div>
               <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", padding: "16px 20px", borderTop: "1px solid var(--line)" }}>
                 <button type="button" className="btn-cancel" disabled={isAddingSchool} onClick={() => setShowAddSchoolModal(false)}>
