@@ -10,8 +10,9 @@ Portal web terpusat untuk mengakses katalog aplikasi dan layanan pendidikan Caba
 - Superadmin dapat mengelola role, akses aplikasi, katalog, dan log aktivitas.
 - Admin dapat mengunggah aplikasi dan mengelola approval pengguna.
 - Staff hanya dapat membuka aplikasi yang diberikan dan mengirim dokumen melalui aplikasi tersebut.
-- Sekolah dapat masuk menggunakan NPSN, memverifikasi email, dan mengakses aplikasi yang ditugaskan setelah disetujui admin.
-- Superadmin dapat mengelola akun sekolah beserta hak akses aplikasinya.
+- Sekolah masuk menggunakan NPSN dan password sementara, lalu kode OTP email; pada login pertama sekolah wajib mengganti password.
+- Superadmin dapat mengelola akun sekolah, mengirim ulang password sementara, dan memilih akses aplikasi termasuk memilih semua aplikasi.
+- Superadmin dapat mengimpor banyak akun sekolah dari workbook Excel `.xlsx` menggunakan template dan panduan.
 - Pencarian aplikasi, kategori, favorit, aplikasi terakhir dibuka, tema light/dark, dan tampilan responsive mobile.
 
 ## Tech Stack
@@ -22,6 +23,7 @@ Portal web terpusat untuk mengakses katalog aplikasi dan layanan pendidikan Caba
 - **Vite 8** sebagai development server dan production bundler.
 - **React Router 7** untuk routing SPA.
 - **Axios** untuk komunikasi REST API.
+- **`@e965/xlsx` (SheetJS API)** untuk membaca workbook `.xlsx` dan membuat template impor sekolah.
 - **Lucide React** untuk ikon antarmuka.
 - **CSS custom responsive** untuk desktop dan mobile.
 - **Oxlint** untuk linting dan **Vitest/Testing Library** untuk kebutuhan testing.
@@ -63,6 +65,7 @@ Portal-Cabdiswilayah1/
 │   │   ├── context/          # State user, aplikasi, tema, dan session
 │   │   ├── layouts/          # Layout dashboard
 │   │   ├── pages/            # Landing, auth, dashboard, profile, settings
+│   │   ├── utils/            # Validasi data dan impor Excel sekolah
 │   │   ├── api.js            # Axios instance dan token interceptor
 │   │   └── App.jsx           # Routing utama
 │   ├── vite.config.js
@@ -189,6 +192,31 @@ Sesi berakhir setelah 10 menit tanpa aktivitas (maksimal 24 jam).
 Jika menggunakan reverse proxy, atur `TRUST_PROXY` hanya sesuai konfigurasi proxy
 yang dipercaya agar IP klien tidak dapat dipalsukan.
 
+## Upload Massal Akun Sekolah melalui Excel
+
+1. Masuk sebagai superadmin, buka **Kelola Sekolah**, lalu klik **Panduan** untuk melihat format dan mengunduh template Excel.
+2. Template berisi lembar **Data Sekolah** untuk data yang akan diimpor dan lembar **Contoh Pengisian** sebagai referensi. Isi data di lembar **Data Sekolah** saja; jangan mengubah header baris pertama.
+3. Gunakan empat kolom berikut:
+
+   | `npsn` | `nama_sekolah` | `email` | `telepon` |
+   | --- | --- | --- | --- |
+   | `12345678` | `SMA Negeri 1 Contoh` | `contoh@sekolah.sch.id` | `081234567890` |
+
+4. Satu baris mewakili satu sekolah. NPSN harus 8 digit, email harus valid, dan telepon berisi 8-15 digit. Atur kolom NPSN dan telepon sebagai **Text/Teks** sebelum mengisi data agar angka nol di depan tidak terhapus.
+5. Unggah file `.xlsx` melalui tombol **Upload Excel**. Ukuran maksimal 10 MB dan maksimal 500 sekolah per file.
+
+Baris valid akan diproses walaupun ada baris lain yang tidak valid atau duplikat.
+Baris yang dilewati dan alasan kegagalan ditampilkan setelah proses. Jika tidak ada
+akun yang berhasil dibuat, hasilnya ditandai **Upload gagal**. Jika akun sudah
+dibuat tetapi email password sementara gagal terkirim, kirim ulang password dari
+daftar akun sekolah. Akun yang berhasil dibuat mendapatkan akses awal ke aplikasi
+kategori Pendidikan.
+
+Untuk mengatur aplikasi sekolah, buka **Edit** pada akun sekolah dan gunakan
+**Pilih Semua** atau **Hapus Semua**, lalu simpan perubahan. Login superadmin
+berakhir setelah 10 menit tanpa aktivitas; masuk kembali jika sesi kedaluwarsa
+saat akan mengunggah file.
+
 ## Konfigurasi Backend
 
 ```bash
@@ -266,7 +294,7 @@ Frontend membaca API dari `VITE_API_URL`. Backend harus mengizinkan origin front
 | `superadmin` / `super_user` | Akses semua aplikasi, kelola aplikasi, user, role, hak akses, dan audit log. |
 | `admin` | Upload aplikasi, melihat katalog, serta menyetujui atau menolak pendaftaran staff. |
 | `staff` / `medium_user` | Membuka aplikasi yang ditugaskan dan mengirim dokumen melalui aplikasi tersebut. |
-| `school_user` | Login dengan NPSN; setelah email diverifikasi dan akun disetujui, hanya membuka aplikasi yang ditugaskan. |
+| `school_user` | Login dengan NPSN, password, dan OTP email; wajib mengganti password sementara setelah login pertama, lalu membuka aplikasi yang ditugaskan setelah email terverifikasi dan akun disetujui. |
 
 Pendaftaran publik selalu menghasilkan akun `staff` dengan status `pending`. Role `admin` hanya dapat diberikan oleh superadmin.
 
@@ -308,7 +336,8 @@ Authorization: Bearer <jwt_token>
 - `PATCH /api/users/:id/role` - mengubah role menjadi `admin` atau `staff`, khusus superadmin.
 - `PUT /api/users/:id/app-access` - mengatur akses aplikasi, khusus superadmin.
 - `GET /api/activity-logs` - melihat audit log, khusus superadmin.
-- `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`, dan `DELETE /api/schools/:npsn` - mengelola akun sekolah oleh superadmin. Pembuatan menerima NPSN, nama, email, dan nomor telepon, lalu mengirim pemberitahuan akun dibuat ke email sekolah.
+- `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`, dan `DELETE /api/schools/:npsn` - mengelola akun sekolah oleh superadmin. Pembuatan menerima NPSN, nama, email, dan nomor telepon, lalu mengirim password sementara ke email sekolah.
+- `POST /api/schools/:npsn/send-temporary-password` - membuat dan mengirim password sementara baru; sekolah wajib menggantinya setelah login.
 - `/api/school-tasks` - superadmin membuat tugas ke semua sekolah aktif; sekolah melihat notifikasi, instruksi/lampiran, membuka tautan tujuan, dan menandai tugas selesai.
 - `PUT /api/schools/:npsn/app-access` - mengatur aplikasi yang dapat diakses sekolah.
 
@@ -354,4 +383,4 @@ Panduan detail tersedia di [deploy.md](deploy.md).
 
 ## Lisensi
 
-Hak Cipta © Cabang Dinas Pendidikan Wilayah 1 Sumatera Utara.
+Hak Cipta © Kelompok Mahasiswa UNIMED🤙.
