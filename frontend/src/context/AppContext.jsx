@@ -25,6 +25,9 @@ export function AppProvider({ children }) {
       ? { ...storedUser, role: normalizeRole(storedUser.role) }
       : null;
   });
+  const [theme, setTheme] = useState(() =>
+    readStorage("portal_theme", "light") === "dark" ? "dark" : "light",
+  );
   const [favorites, setFavorites] = useState(() => readStorage("portal_favorites", []));
   const [recent, setRecent] = useState(() => readStorage("portal_recent_apps", []));
   const [apps, setApps] = useState([]);
@@ -32,6 +35,11 @@ export function AppProvider({ children }) {
   const [appsError, setAppsError] = useState("");
 
   const persist = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    persist("portal_theme", theme);
+  }, [theme]);
 
   const login = async (email, password) => {
     try {
@@ -162,7 +170,7 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider
       value={{
-        user, favorites, recent, apps, isLoadingApps, appsError,
+        user, theme, setTheme, favorites, recent, apps, isLoadingApps, appsError,
         login, completeSchoolLogin, logout, toggleFavorite, addRecent, refreshApps, updateUser
       }}
     >

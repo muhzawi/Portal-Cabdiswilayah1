@@ -11,6 +11,7 @@ import userRoutes from "./routes/users.js";
 import schoolRoutes from "./routes/schools.js";
 import appRoutes from "./routes/apps.js";
 import activityRoutes from "./routes/activity.js";
+import schoolTaskRoutes from "./routes/school-tasks.js";
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -38,6 +39,7 @@ app.use("/api/app-icons", iconRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/schools", schoolRoutes);
 app.use("/api/activity-logs", activityRoutes);
+app.use("/api/school-tasks", schoolTaskRoutes);
 app.use("/api", appRoutes);
 
 app.use((error, _req, res, _next) => {

@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
 import SettingsPage from "./pages/SettingsPage";
 import ActivityLogs from "./pages/ActivityLogs";
+import SchoolTasks from "./pages/SchoolTasks";
 import DashboardLayout from "./layouts/DashboardLayout";
 
 function ProtectedApp() {
@@ -29,6 +30,8 @@ function ProtectedApp() {
           <Route path="profile/edit" element={<EditProfile />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/activity-logs" element={<ActivityLogs />} />
+          <Route path="/tasks" element={<SchoolTasks />} />
+          <Route path="/tasks/:id" element={<SchoolTasks />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </DashboardLayout>

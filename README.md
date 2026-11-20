@@ -134,7 +134,19 @@ belum memiliki email harus dibantu admin memperbarui datanya sebelum dapat
 menerima kode login. Saat mengganti email sekolah secara manual, kosongkan juga
 `email_verified_at`; kode OTP pertama ke email tersebut akan memverifikasinya.
 
-7. Pastikan tabel berikut tersedia:
+7. Jalankan migrasi tugas sekolah:
+
+```bash
+mysql -u root -p portal_cabdiswilayah1 < backend/mysql/006_create_school_tasks.sql
+```
+
+8. Jalankan migrasi nomor telepon sekolah:
+
+```bash
+mysql -u root -p portal_cabdiswilayah1 < backend/mysql/007_add_school_phone.sql
+```
+
+9. Pastikan tabel berikut tersedia:
 
    - `users`
    - `applications`
@@ -144,6 +156,8 @@ menerima kode login. Saat mengganti email sekolah secara manual, kosongkan juga
    - `school_application_access`
    - `school_email_verification_tokens`
    - `school_login_codes`
+   - `school_tasks`
+   - `school_task_recipients`
    - `login_ip_attempts`
    - `auth_sessions`
 
@@ -273,7 +287,8 @@ Authorization: Bearer <jwt_token>
 - `PATCH /api/users/:id/role` - mengubah role menjadi `admin` atau `staff`, khusus superadmin.
 - `PUT /api/users/:id/app-access` - mengatur akses aplikasi, khusus superadmin.
 - `GET /api/activity-logs` - melihat audit log, khusus superadmin.
-- `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`, dan `DELETE /api/schools/:npsn` - mengelola akun sekolah oleh superadmin. Pembuatan menerima NPSN, nama, dan email sekolah, lalu mengirim pemberitahuan akun dibuat.
+- `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`, dan `DELETE /api/schools/:npsn` - mengelola akun sekolah oleh superadmin. Pembuatan menerima NPSN, nama, email, dan nomor telepon, lalu mengirim pemberitahuan akun dibuat ke email sekolah.
+- `/api/school-tasks` - superadmin membuat tugas ke semua sekolah aktif; sekolah melihat notifikasi, instruksi/lampiran, membuka tautan tujuan, dan menandai tugas selesai.
 - `PUT /api/schools/:npsn/app-access` - mengatur aplikasi yang dapat diakses sekolah.
 
 ## Perintah Development

@@ -1,0 +1,2 @@
+ALTER TABLE schools
+  ADD COLUMN phone VARCHAR(30) NULL AFTER email;

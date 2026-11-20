@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -14,28 +14,55 @@ import {
   Star,
   Users,
   X,
+  ClipboardList,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import Logo from "../components/ui/Logo";
+import api from "../api";
 
 function DashboardLayout({ children }) {
   const { user, logout } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  if (!user) return <Navigate to="/login" replace />;
+  const [pendingTaskCount, setPendingTaskCount] = useState(0);
+  const isSchool = user?.type === "school";
+  const isSuperUser = ["super_user", "superadmin"].includes(user?.role);
   const nav = [
     ["/dashboard", "Dashboard", Home],
-    ...(user?.role === "super_user"
+    ...(isSuperUser
       ? [
           ["/dashboard?tab=monitoring", "Monitoring Pengguna", Users],
           ["/dashboard?tab=schools", "Akun Sekolah", GraduationCap],
+          ["/tasks", "Kelola Tugas", ClipboardList],
         ]
       : []),
+    ...(isSchool ? [["/tasks", "Notifikasi Tugas", Bell]] : []),
     ["/apps", "Aplikasi", Grid2X2],
     ["/apps?filter=favorite", "Favorit", Heart],
     ["/apps?filter=recent", "Baru Dibuka", Star],
   ];
+
+  useEffect(() => {
+    if (!isSchool) {
+      return undefined;
+    }
+
+    let active = true;
+    api.get("/api/school-tasks")
+      .then((response) => {
+        if (active) setPendingTaskCount(response.data.pendingCount || 0);
+      })
+      .catch((error) => {
+        console.error("Gagal memuat jumlah notifikasi tugas:", error);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isSchool, location.pathname]);
+
+  if (!user) return <Navigate to="/login" replace />;
+
   return (
     <div className="dashboard-shell">
       <aside className={`sidebar ${open ? "open" : ""}`}>
@@ -54,7 +81,9 @@ function DashboardLayout({ children }) {
             <Link
               key={label}
               className={
-                location.pathname + location.search === path ? "active" : ""
+                path === "/tasks"
+                  ? location.pathname.startsWith("/tasks") ? "active" : ""
+                  : location.pathname + location.search === path ? "active" : ""
               }
               to={path}
               onClick={() => setOpen(false)}
@@ -101,10 +130,21 @@ function DashboardLayout({ children }) {
             <input placeholder="Cari aplikasi..." />
           </div>
           <div className="header-actions">
-            <button className="icon-button" aria-label="Notifikasi">
-              <Bell size={19} />
-              <span className="notification-dot" />
-            </button>
+            {isSchool && (
+              <Link
+                className="icon-button notification-button"
+                to="/tasks"
+                aria-label={`Notifikasi tugas, ${pendingTaskCount} belum selesai`}
+                title="Notifikasi tugas"
+              >
+                <Bell size={19} />
+                {pendingTaskCount > 0 && (
+                  <span className="notification-badge">
+                    {pendingTaskCount > 99 ? "99+" : pendingTaskCount}
+                  </span>
+                )}
+              </Link>
+            )}
             <Link className="user-chip" to="/profile">
               <span className="avatar">{user.name[0].toUpperCase()}</span>
               <span>{user.name}</span>

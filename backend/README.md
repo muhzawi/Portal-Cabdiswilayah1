@@ -25,9 +25,11 @@ Role yang digunakan:
    dan token verifikasi email.
 5. Jalankan `mysql/004_create_login_protection.sql` untuk tabel blokir IP dan sesi.
 6. Jalankan `mysql/005_create_school_login_codes.sql` untuk tabel kode login sekolah.
-7. Isi konfigurasi SMTP di bawah ini untuk mengaktifkan email login, reset password,
+7. Jalankan `mysql/006_create_school_tasks.sql` untuk tabel tugas dan notifikasi sekolah.
+8. Jalankan `mysql/007_add_school_phone.sql` untuk menambahkan nomor telepon sekolah.
+9. Isi konfigurasi SMTP di bawah ini untuk mengaktifkan email login, reset password,
    dan verifikasi email sekolah.
-8. Jalankan `npm install` dan `npm run dev` dari folder `backend`.
+10. Jalankan `npm install` dan `npm run dev` dari folder `backend`.
 
 Kode login sekolah berlaku 5 menit, dibatasi 3 permintaan per 15 menit per NPSN
 (maksimal 10 permintaan per IP), dan hanya dapat dicoba 5 kali. Sekolah harus
@@ -56,7 +58,10 @@ Endpoint utama:
 - `GET /api/schools`, `POST /api/schools`, `PATCH /api/schools/:npsn`,
   `DELETE /api/schools/:npsn`, dan
   `PUT /api/schools/:npsn/app-access` untuk pengelolaan sekolah oleh super user
-  (`POST /api/schools` menerima `npsn`, `name`, dan `email` serta mengirim email pemberitahuan)
+  (`POST /api/schools` menerima `npsn`, `name`, `email`, dan `phone`; email
+  pemberitahuan dikirim ke alamat sekolah).
+- `/api/school-tasks` untuk membuat tugas ke semua sekolah aktif, melihat tugas,
+  mengunduh lampiran, dan menandai tugas selesai (super user/sekolah sesuai endpoint)
 
 Untuk memberi akses aplikasi kepada medium user, tambahkan baris pada tabel
 `user_application_access` di MySQL:

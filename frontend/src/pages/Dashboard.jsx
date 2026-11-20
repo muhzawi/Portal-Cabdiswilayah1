@@ -64,6 +64,7 @@ function Dashboard() {
   const [newSchoolNpsn, setNewSchoolNpsn] = useState("");
   const [newSchoolName, setNewSchoolName] = useState("");
   const [newSchoolEmail, setNewSchoolEmail] = useState("");
+  const [newSchoolPhone, setNewSchoolPhone] = useState("");
   const [isAddingSchool, setIsAddingSchool] = useState(false);
   const [addSchoolError, setAddSchoolError] = useState("");
   
@@ -173,8 +174,13 @@ function Dashboard() {
   // Handler: Add School
   const handleAddSchool = async (e) => {
     e.preventDefault();
-    if (!newSchoolNpsn.trim() || !newSchoolName.trim() || !newSchoolEmail.trim()) {
-      setAddSchoolError("NPSN, nama sekolah, dan email wajib diisi.");
+    if (
+      !newSchoolNpsn.trim()
+      || !newSchoolName.trim()
+      || !newSchoolEmail.trim()
+      || !newSchoolPhone.trim()
+    ) {
+      setAddSchoolError("NPSN, nama sekolah, email, dan nomor telepon wajib diisi.");
       return;
     }
     setIsAddingSchool(true);
@@ -184,6 +190,7 @@ function Dashboard() {
         npsn: newSchoolNpsn.trim(),
         name: newSchoolName.trim(),
         email: newSchoolEmail.trim(),
+        phone: newSchoolPhone.trim(),
       });
       const message = res.data?.message || "Sekolah berhasil ditambahkan!";
       if (res.data?.notificationSent === false) {
@@ -195,6 +202,7 @@ function Dashboard() {
       setNewSchoolNpsn("");
       setNewSchoolName("");
       setNewSchoolEmail("");
+      setNewSchoolPhone("");
       fetchSchools();
     } catch (err) {
       setAddSchoolError(err.response?.data?.error || "Gagal menambahkan sekolah.");
@@ -1006,6 +1014,8 @@ function Dashboard() {
                       <td>
                         <div className="user-name-cell">
                           <strong>{school.name}</strong>
+                          <span>{school.email || "Email belum diisi"}</span>
+                          <span>{school.phone || "Telepon belum diisi"}</span>
                         </div>
                       </td>
                       <td>
@@ -1459,7 +1469,7 @@ function Dashboard() {
                 <span className="school-create-icon"><GraduationCap size={20} /></span>
                 <div>
                   <h3>Tambah Sekolah</h3>
-                  <p>Daftarkan NPSN dan email aktif sekolah.</p>
+                  <p>Daftarkan NPSN, email, dan nomor telepon sekolah.</p>
                 </div>
               </div>
               <button className="modal-close" disabled={isAddingSchool} onClick={() => setShowAddSchoolModal(false)}>
@@ -1513,6 +1523,22 @@ function Dashboard() {
                     disabled={isAddingSchool}
                   />
                   <span>Email ini menerima pemberitahuan akun dibuat dan kode OTP untuk login.</span>
+                </div>
+                <div className="form-group school-form-group">
+                  <label htmlFor="new-school-phone">Nomor Telepon Sekolah</label>
+                  <input
+                    id="new-school-phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    maxLength={30}
+                    value={newSchoolPhone}
+                    onChange={(e) => setNewSchoolPhone(e.target.value)}
+                    placeholder="Contoh: +62 812-3456-7890"
+                    required
+                    disabled={isAddingSchool}
+                  />
+                  <span>Masukkan 8-15 digit nomor yang dapat dihubungi.</span>
                 </div>
                 <div className="school-create-note"><CheckCircle2 size={17} /><span>Aplikasi kategori Pendidikan diberikan otomatis. Sekolah login menggunakan NPSN dan kode sekali pakai; tidak ada password sekolah.</span></div>
               </div>

@@ -13,7 +13,7 @@ router.use(requireAuth, requireRole("super_user"));
 router.get("/", async (_req, res, next) => {
   try {
     const [schools] = await db.query(
-      "SELECT npsn, name, email, email_verified_at, status, created_at, updated_at FROM schools ORDER BY created_at DESC",
+      "SELECT npsn, name, email, phone, email_verified_at, status, created_at, updated_at FROM schools ORDER BY created_at DESC",
     );
     const [accessRows] = await db.query(
       "SELECT school_npsn, application_id FROM school_application_access",
@@ -41,6 +41,7 @@ router.post("/", async (req, res, next) => {
   const npsn = typeof req.body.npsn === "string" ? req.body.npsn.trim() : "";
   const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
   const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  const phone = typeof req.body.phone === "string" ? req.body.phone.trim() : "";
   if (!/^\d{8}$/.test(npsn)) {
     return res.status(400).json({ error: "NPSN harus berupa 8 digit angka." });
   }
@@ -49,6 +50,15 @@ router.post("/", async (req, res, next) => {
   }
   if (email.length > 255 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: "Alamat email sekolah tidak valid." });
+  }
+  const phoneDigits = phone.replace(/\D/g, "");
+  if (
+    phone.length > 30
+    || !/^\+?[0-9][0-9\s()-]*$/.test(phone)
+    || phoneDigits.length < 8
+    || phoneDigits.length > 15
+  ) {
+    return res.status(400).json({ error: "Nomor telepon harus berisi 8-15 digit yang valid." });
   }
   if (!isSmtpConfigured()) {
     return res.status(503).json({
@@ -80,8 +90,8 @@ router.post("/", async (req, res, next) => {
 
     const passwordHash = await bcrypt.hash(randomUUID(), 10);
     await connection.query(
-      "INSERT INTO schools (npsn, name, password_hash, status, email) VALUES (?, ?, ?, 'approved', ?)",
-      [npsn, name, passwordHash, email],
+      "INSERT INTO schools (npsn, name, password_hash, status, email, phone) VALUES (?, ?, ?, 'approved', ?, ?)",
+      [npsn, name, passwordHash, email, phone],
     );
     [educationApps] = await connection.query(
       "SELECT id FROM applications WHERE LOWER(category) = 'pendidikan'",
@@ -123,6 +133,7 @@ router.post("/", async (req, res, next) => {
         npsn,
         name,
         email,
+        phone,
         status: "approved",
         app_access: educationApps.map(({ id }) => id),
       },
